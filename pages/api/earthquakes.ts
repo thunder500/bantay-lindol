@@ -3,25 +3,46 @@ import { fetchPhivolcs } from '@/lib/sources/phivolcs';
 import { fetchUsgs } from '@/lib/sources/usgs';
 import { mergeQuakes } from '@/lib/merge';
 import { TtlCache } from '@/lib/cache';
+import { sanitizeRange, rangeIncludesToday, rangeKey } from '@/lib/dateRange';
 import { EarthquakeApiResponse, Quake } from '@/lib/types';
 
-const cache = new TtlCache<EarthquakeApiResponse>(60_000);
+// One cache per distinct range key.
+const caches = new Map<string, TtlCache<EarthquakeApiResponse>>();
+function cacheFor(key: string): TtlCache<EarthquakeApiResponse> {
+  let c = caches.get(key);
+  if (!c) { c = new TtlCache<EarthquakeApiResponse>(60_000); caches.set(key, c); }
+  return c;
+}
+
+function first(v: string | string[] | undefined): string | undefined {
+  return Array.isArray(v) ? v[0] : v;
+}
+function todayYmd(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 async function settle<T>(p: Promise<T>): Promise<T | null> {
   try { return await p; } catch { return null; }
 }
 
 export default async function handler(
-  _req: NextApiRequest,
+  req: NextApiRequest,
   res: NextApiResponse<EarthquakeApiResponse>,
 ) {
-  if (_req.method !== 'GET') { res.status(405).end(); return; }
+  if (req.method !== 'GET') { res.status(405).end(); return; }
+
+  const { start, end } = sanitizeRange(first(req.query.start), first(req.query.end));
+  const key = rangeKey(start, end);
+  const cache = cacheFor(key);
+
   const cached = cache.get();
   if (cached) { res.status(200).json(cached); return; }
 
+  const includeRecent = rangeIncludesToday(end, todayYmd());
+
   const [phivolcs, usgs] = await Promise.all([
-    settle(fetchPhivolcs()),
-    settle(fetchUsgs()),
+    includeRecent ? settle(fetchPhivolcs()) : Promise.resolve(null),
+    settle(fetchUsgs({ start, end })),
   ]);
 
   const sourcesUsed: ('phivolcs' | 'usgs')[] = [];
