@@ -4,6 +4,7 @@ import { fetchUsgs } from '@/lib/sources/usgs';
 import { resolveSources } from '@/lib/resolveSources';
 import { TtlCache } from '@/lib/cache';
 import { sanitizeRange, rangeIncludesToday, rangeKey } from '@/lib/dateRange';
+import { filterByRange } from '@/lib/dateFilter';
 import { EarthquakeApiResponse } from '@/lib/types';
 
 // One cache per distinct range key.
@@ -54,8 +55,10 @@ export default async function handler(
     return;
   }
 
+  const ranged = filterByRange(quakes, start, end);
+
   const payload: EarthquakeApiResponse = {
-    quakes, sourcesUsed, stale: false, fetchedAt: Date.now(),
+    quakes: ranged, sourcesUsed, stale: false, fetchedAt: Date.now(),
   };
   cache.set(payload);
   res.status(200).json(payload);
