@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "us6000abcd",
+      "properties": {
+        "mag": 5.3,
+        "place": "19 km SSW of Lumatil, Philippines",
+        "time": 1749200000000,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000abcd"
+      },
+      "geometry": { "type": "Point", "coordinates": [125.37, 5.77, 13.0] }
+    }
+  ]
+}
