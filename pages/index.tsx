@@ -16,7 +16,10 @@ const QuakeMap = dynamic(() => import('@/components/QuakeMap'), { ssr: false });
 const ALERT_THRESHOLD = 4.0;
 
 export default function Home() {
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const today = useMemo(
+    () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }),
+    [],
+  );
   const monthList = useMemo(() => monthOptions(today, 24), [today]);
 
   const [month, setMonth] = useState(today.slice(0, 7));

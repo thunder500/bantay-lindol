@@ -18,7 +18,7 @@ function first(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
 }
 function todayYmd(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
 }
 
 async function settle<T>(p: Promise<T>): Promise<T | null> {
