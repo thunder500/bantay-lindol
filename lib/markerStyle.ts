@@ -6,7 +6,8 @@ export function depthColor(depthKm: number): string {
   return '#3b82f6';
 }
 
-// Area grows with magnitude so big quakes read as big dots.
+// Gradual size ramp so M1 reads as a tiny dot and M8 as a large circle,
+// matching the reference legend's magnitude-range sizes.
 export function magRadius(mag: number): number {
-  return Math.max(3, Math.round(2 + Math.pow(Math.max(mag, 0), 1.6)));
+  return Math.max(3, Math.round(Math.max(mag, 0) * 2));
 }

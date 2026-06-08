@@ -1,5 +1,4 @@
 import { MapContainer, TileLayer, CircleMarker, Popup, ZoomControl, Marker } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Quake } from '@/lib/types';
@@ -31,27 +30,25 @@ export default function QuakeMap({ quakes, newest, onSelect }: Props) {
         <Marker position={[newest.lat, newest.lon]} icon={pulseIcon}
                 interactive={false} zIndexOffset={1000} />
       )}
-      <MarkerClusterGroup chunkedLoading>
-        {quakes.map((q) => (
-          <CircleMarker
-            key={q.id}
-            center={[q.lat, q.lon]}
-            radius={magRadius(q.magnitude)}
-            pathOptions={{
-              color: q.id === newest?.id ? '#ffffff' : depthColor(q.depthKm),
-              weight: q.id === newest?.id ? 2 : 1,
-              fillColor: depthColor(q.depthKm),
-              fillOpacity: 0.8,
-            }}
-            eventHandlers={{ click: () => onSelect(q) }}
-          >
-            <Popup>
-              <strong>M {q.magnitude.toFixed(1)}</strong> · {q.depthKm} km<br />
-              {q.location}
-            </Popup>
-          </CircleMarker>
-        ))}
-      </MarkerClusterGroup>
+      {quakes.map((q) => (
+        <CircleMarker
+          key={q.id}
+          center={[q.lat, q.lon]}
+          radius={magRadius(q.magnitude)}
+          pathOptions={{
+            color: q.id === newest?.id ? '#ffffff' : depthColor(q.depthKm),
+            weight: q.id === newest?.id ? 2 : 1,
+            fillColor: depthColor(q.depthKm),
+            fillOpacity: 0.85,
+          }}
+          eventHandlers={{ click: () => onSelect(q) }}
+        >
+          <Popup>
+            <strong>M {q.magnitude.toFixed(1)}</strong> | {q.depthKm} km<br />
+            {q.location}
+          </Popup>
+        </CircleMarker>
+      ))}
     </MapContainer>
   );
 }

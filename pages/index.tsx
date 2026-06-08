@@ -23,9 +23,8 @@ export default function Home() {
   const monthList = useMemo(() => monthOptions(today, 24), [today]);
 
   const [month, setMonth] = useState(today.slice(0, 7));
-  const firstBounds = useMemo(() => monthBounds(today.slice(0, 7), today), [today]);
-  const [start, setStart] = useState(firstBounds.start);
-  const [end, setEnd] = useState(firstBounds.end);
+  const [start, setStart] = useState(today);
+  const [end, setEnd] = useState(today);
 
   const [data, setData] = useState<EarthquakeApiResponse | null>(null);
   const [filters, setFilters] = useState<FilterState>({ minMag: 0, maxDepth: 700, sinceMs: 0 });
@@ -71,9 +70,14 @@ export default function Home() {
 
   function changeMonth(m: string) {
     setMonth(m);
-    const b = monthBounds(m, today);
-    setStart(b.start);
-    setEnd(b.end);
+    if (m === today.slice(0, 7)) {
+      setStart(today);
+      setEnd(today);
+    } else {
+      const b = monthBounds(m, today);
+      setStart(b.start);
+      setEnd(b.end);
+    }
   }
 
   const now = data?.fetchedAt ?? Date.now();
