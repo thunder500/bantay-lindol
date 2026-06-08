@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { EarthquakeApiResponse, Quake } from '@/lib/types';
 import { applyFilters, FilterState } from '@/lib/filters';
@@ -18,7 +18,7 @@ export default function Home() {
   const [selected, setSelected] = useState<Quake | null>(null);
   const seenIds = useRef<Set<string>>(new Set());
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const res = await fetch('/api/earthquakes');
       const json: EarthquakeApiResponse = await res.json();
@@ -32,13 +32,13 @@ export default function Home() {
       json.quakes.forEach((q) => seenIds.current.add(q.id));
       setData(json);
     } catch { /* keep last good data */ }
-  }
+  }, []);
 
   useEffect(() => {
     load();
     const t = setInterval(load, 60_000);
     return () => clearInterval(t);
-  }, []);
+  }, [load]);
 
   function notify(q: Quake) {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;

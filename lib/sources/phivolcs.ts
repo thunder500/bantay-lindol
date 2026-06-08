@@ -44,12 +44,13 @@ export function parsePhivolcs(html: string): Quake[] {
     const magnitude = num($(cells[4]).text());
     const location = $(cells[5]).text().trim().replace(/\s+/g, ' ');
     if ([lat, lon, depthKm, magnitude].some((n) => Number.isNaN(n))) return;
+    if (depthKm < 0 || depthKm > 800) return;
     const href = dateCell.find('a').attr('href');
     out.push({
       id: makeId('phivolcs', time, lat, lon),
       time, lat, lon, depthKm, magnitude, location,
       source: 'phivolcs',
-      url: href ? new URL(href, BASE).toString() : PHIVOLCS_URL,
+      url: href ? new URL(href, BASE).toString() : undefined,
     });
   });
   return out;

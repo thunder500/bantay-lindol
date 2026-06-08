@@ -16,6 +16,14 @@ describe('parsePhtDate', () => {
   it('returns null for unparseable input', () => {
     expect(parsePhtDate('not a date')).toBeNull();
   });
+  it('handles 12:00 AM (midnight) and 12:00 PM (noon) correctly', () => {
+    // 12:00 AM PHT == previous-day 16:00 UTC
+    expect(new Date(parsePhtDate('09 June 2026 - 12:00 AM')!).toISOString())
+      .toBe('2026-06-08T16:00:00.000Z');
+    // 12:00 PM PHT == 04:00 UTC same day
+    expect(new Date(parsePhtDate('09 June 2026 - 12:00 PM')!).toISOString())
+      .toBe('2026-06-09T04:00:00.000Z');
+  });
 });
 
 describe('parsePhivolcs', () => {
