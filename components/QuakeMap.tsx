@@ -1,24 +1,36 @@
-import { MapContainer, TileLayer, CircleMarker, Popup, ZoomControl } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, ZoomControl, Marker } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Quake } from '@/lib/types';
 import { depthColor, magRadius } from '@/lib/markerStyle';
 
 interface Props {
   quakes: Quake[];
-  newestId?: string;
+  newest?: Quake;
   onSelect: (q: Quake) => void;
 }
 
-export default function QuakeMap({ quakes, newestId, onSelect }: Props) {
+const pulseIcon = L.divIcon({
+  className: 'eq-pulse-icon',
+  html: '<span class="eq-pulse-ring"></span>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
+export default function QuakeMap({ quakes, newest, onSelect }: Props) {
   return (
     <MapContainer center={[12.5, 122]} zoom={6} className="h-full w-full"
-                  preferCanvas style={{ background: '#0b1220' }} zoomControl={false}>
+                  zoomControl={false} preferCanvas style={{ background: '#0b1220' }}>
       <ZoomControl position="bottomleft" />
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         attribution='&copy; OpenStreetMap &copy; CARTO | Data: PHIVOLCS, USGS'
       />
+      {newest && (
+        <Marker position={[newest.lat, newest.lon]} icon={pulseIcon}
+                interactive={false} zIndexOffset={1000} />
+      )}
       <MarkerClusterGroup chunkedLoading>
         {quakes.map((q) => (
           <CircleMarker
@@ -26,8 +38,8 @@ export default function QuakeMap({ quakes, newestId, onSelect }: Props) {
             center={[q.lat, q.lon]}
             radius={magRadius(q.magnitude)}
             pathOptions={{
-              color: q.id === newestId ? '#ffffff' : depthColor(q.depthKm),
-              weight: q.id === newestId ? 2 : 1,
+              color: q.id === newest?.id ? '#ffffff' : depthColor(q.depthKm),
+              weight: q.id === newest?.id ? 2 : 1,
               fillColor: depthColor(q.depthKm),
               fillOpacity: 0.8,
             }}
