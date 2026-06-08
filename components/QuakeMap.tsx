@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, ZoomControl } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import { Quake } from '@/lib/types';
@@ -13,7 +13,8 @@ interface Props {
 export default function QuakeMap({ quakes, newestId, onSelect }: Props) {
   return (
     <MapContainer center={[12.5, 122]} zoom={6} className="h-full w-full"
-                  preferCanvas style={{ background: '#0b1220' }}>
+                  preferCanvas style={{ background: '#0b1220' }} zoomControl={false}>
+      <ZoomControl position="bottomleft" />
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         attribution='&copy; OpenStreetMap &copy; CARTO | Data: PHIVOLCS, USGS'
