@@ -1,6 +1,9 @@
+import https from 'node:https';
+import { rootCertificates } from 'node:tls';
 import * as cheerio from 'cheerio';
 import { Quake } from '../types';
 import { makeId } from '../id';
+import { PHIVOLCS_INTERMEDIATE_CA } from './phivolcsCa';
 
 const PHIVOLCS_URL = 'https://earthquake.phivolcs.dost.gov.ph/';
 const BASE = 'https://earthquake.phivolcs.dost.gov.ph/';
@@ -64,16 +67,29 @@ const BROWSER_HEADERS = {
   'Accept-Language': 'en-US,en;q=0.9',
 };
 
-async function fetchHtml(url: string, timeoutMs = 15000): Promise<string> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { headers: BROWSER_HEADERS, signal: controller.signal });
-    if (!res.ok) throw new Error(`PHIVOLCS ${res.status}`);
-    return await res.text();
-  } finally {
-    clearTimeout(timer);
-  }
+// Default trusted roots PLUS the intermediate PHIVOLCS fails to send.
+const PHIVOLCS_CA = [...rootCertificates, PHIVOLCS_INTERMEDIATE_CA];
+
+function fetchHtml(url: string, timeoutMs = 15000): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      url,
+      { headers: BROWSER_HEADERS, ca: PHIVOLCS_CA, timeout: timeoutMs },
+      (res) => {
+        if (!res.statusCode || res.statusCode >= 400) {
+          res.resume();
+          reject(new Error(`PHIVOLCS ${res.statusCode}`));
+          return;
+        }
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (c) => { body += c; });
+        res.on('end', () => resolve(body));
+      },
+    );
+    req.on('timeout', () => req.destroy(new Error('PHIVOLCS timeout')));
+    req.on('error', reject);
+  });
 }
 
 export async function fetchPhivolcs(): Promise<Quake[]> {
