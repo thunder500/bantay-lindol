@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { fetchPhivolcs } from '@/lib/sources/phivolcs';
 import { fetchUsgs } from '@/lib/sources/usgs';
-import { mergeQuakes } from '@/lib/merge';
+import { resolveSources } from '@/lib/resolveSources';
 import { TtlCache } from '@/lib/cache';
 import { sanitizeRange, rangeIncludesToday, rangeKey } from '@/lib/dateRange';
-import { EarthquakeApiResponse, Quake } from '@/lib/types';
+import { EarthquakeApiResponse } from '@/lib/types';
 
 // One cache per distinct range key.
 const caches = new Map<string, TtlCache<EarthquakeApiResponse>>();
@@ -45,16 +45,9 @@ export default async function handler(
     settle(fetchUsgs({ start, end })),
   ]);
 
-  const sourcesUsed: ('phivolcs' | 'usgs')[] = [];
-  let quakes: Quake[] = [];
-  if (phivolcs?.length) {
-    sourcesUsed.push('phivolcs');
-    quakes = mergeQuakes(phivolcs, usgs ?? []);
-    if (usgs?.length) sourcesUsed.push('usgs');
-  } else if (usgs?.length) {
-    sourcesUsed.push('usgs');
-    quakes = usgs;
-  } else {
+  const { quakes, sourcesUsed, failed } = resolveSources(phivolcs, usgs);
+
+  if (failed) {
     const stale = cache.peek();
     if (stale) { res.status(200).json({ ...stale, stale: true }); return; }
     res.status(503).json({ quakes: [], sourcesUsed: [], stale: true, fetchedAt: Date.now() });

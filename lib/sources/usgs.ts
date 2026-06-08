@@ -11,7 +11,7 @@ export interface UsgsRange { start?: string; end?: string; }
 export function buildUsgsUrl(range: UsgsRange = {}): string {
   let url = USGS_BASE;
   if (range.start) url += `&starttime=${encodeURIComponent(range.start)}`;
-  if (range.end) url += `&endtime=${encodeURIComponent(range.end)}`;
+  if (range.end) url += `&endtime=${encodeURIComponent(range.end + 'T23:59:59')}`;
   return url;
 }
 

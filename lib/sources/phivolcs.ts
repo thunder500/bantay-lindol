@@ -56,8 +56,36 @@ export function parsePhivolcs(html: string): Quake[] {
   return out;
 }
 
+const BROWSER_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+    '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+};
+
+async function fetchHtml(url: string, timeoutMs = 15000): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { headers: BROWSER_HEADERS, signal: controller.signal });
+    if (!res.ok) throw new Error(`PHIVOLCS ${res.status}`);
+    return await res.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function fetchPhivolcs(): Promise<Quake[]> {
-  const res = await fetch(PHIVOLCS_URL, { headers: { 'User-Agent': 'BantayLindol/1.0' } });
-  if (!res.ok) throw new Error(`PHIVOLCS ${res.status}`);
-  return parsePhivolcs(await res.text());
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const quakes = parsePhivolcs(await fetchHtml(PHIVOLCS_URL));
+      if (quakes.length) return quakes;
+      lastErr = new Error('PHIVOLCS returned no parseable rows');
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('PHIVOLCS fetch failed');
 }

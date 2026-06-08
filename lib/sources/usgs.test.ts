@@ -36,5 +36,6 @@ describe('buildUsgsUrl', () => {
     const u = buildUsgsUrl({ start: '2026-05-01', end: '2026-05-31' });
     expect(u).toContain('starttime=2026-05-01');
     expect(u).toContain('endtime=2026-05-31');
+    expect(u).toContain('T23'); // end is inclusive of the whole day
   });
 });
