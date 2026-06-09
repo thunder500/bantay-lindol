@@ -4,7 +4,7 @@ import { EarthquakeApiResponse, Quake } from '@/lib/types';
 import { applyFilters, FilterState } from '@/lib/filters';
 import { computeStats } from '@/lib/stats';
 import { monthOptions, monthBounds } from '@/lib/months';
-import { playAlertRing, primeAudio } from '@/lib/alertSound';
+import { playAlertRing, primeAudio, stopAlertRing } from '@/lib/alertSound';
 import type { Basemap } from '@/components/QuakeMap';
 import ControlPanel from '@/components/ControlPanel';
 import PeriodControls from '@/components/PeriodControls';
@@ -90,16 +90,25 @@ export default function Home() {
   // Auto-dismiss the on-screen alert banner.
   useEffect(() => {
     if (!alertQuake) return;
-    const t = setTimeout(() => setAlertQuake(null), 12_000);
+    const t = setTimeout(() => { setAlertQuake(null); stopAlertRing(); }, 20_000);
     return () => clearTimeout(t);
   }, [alertQuake]);
 
+  function dismissAlert() {
+    setAlertQuake(null);
+    stopAlertRing();
+  }
+
   // Ring, show the banner, and fire an OS notification for a new quake.
   function raiseAlert(q: Quake) {
-    playAlertRing();
+    playAlertRing(q.magnitude);
     setAlertQuake(q);
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      new Notification(`Magnitude ${q.magnitude.toFixed(1)} earthquake`, { body: q.location });
+      new Notification(`⚠️ Magnitude ${q.magnitude.toFixed(1)} earthquake`, {
+        body: `${q.location}\nDepth ${q.depthKm} km`,
+        requireInteraction: true,
+        tag: 'eq-alert',
+      });
     }
   }
 
@@ -152,7 +161,7 @@ export default function Home() {
         basemap={basemap}
       />
 
-      <AlertBanner quake={alertQuake} onClose={() => setAlertQuake(null)} />
+      <AlertBanner quake={alertQuake} onClose={dismissAlert} />
 
       <div className="absolute top-4 left-4 z-[1000] space-y-3">
         <header>

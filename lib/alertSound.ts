@@ -1,40 +1,56 @@
-// Audible earthquake alert using the Web Audio API (no asset file needed).
-// Browsers block audio until the first user gesture, so call primeAudio() on
-// an early interaction to unlock it.
+// Earthquake alert sound using the official HazardHunterPH alert audio
+// (public/audio/danger.mp3 and danger_low.mp3). Browsers block audio until the
+// first user gesture, so primeAudio() unlocks the elements on an early click.
 
-let ctx: AudioContext | null = null;
+const HIGH_SRC = '/audio/danger.mp3';      // strong-quake alarm
+const LOW_SRC = '/audio/danger_low.mp3';   // lower-intensity alarm
 
-function getCtx(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
-  const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AC) return null;
-  if (!ctx) ctx = new AC();
-  if (ctx.state === 'suspended') void ctx.resume();
-  return ctx;
+let high: HTMLAudioElement | null = null;
+let low: HTMLAudioElement | null = null;
+
+function make(src: string): HTMLAudioElement | null {
+  if (typeof Audio === 'undefined') return null;
+  const a = new Audio(src);
+  a.preload = 'auto';
+  return a;
 }
 
-// Unlock the audio context on a user gesture (e.g. first click).
+function ensure(): void {
+  if (!high) high = make(HIGH_SRC);
+  if (!low) low = make(LOW_SRC);
+}
+
+// Unlock playback on a user gesture: briefly play muted, then reset.
 export function primeAudio(): void {
-  getCtx();
+  ensure();
+  [high, low].forEach((a) => {
+    if (!a) return;
+    a.muted = true;
+    a.play()
+      .then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
+      .catch(() => { a.muted = false; });
+  });
 }
 
-// A short three-tone rising chime, repeated once, like an alert "ring".
-export function playAlertRing(): void {
-  const ac = getCtx();
-  if (!ac) return;
-  const start = ac.currentTime;
-  const tones = [660, 880, 1175, 660, 880, 1175];
-  tones.forEach((freq, i) => {
-    const t = start + i * 0.16;
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
-    osc.connect(gain).connect(ac.destination);
-    osc.start(t);
-    osc.stop(t + 0.15);
+// Play the alarm. Strong quakes (M5+) get the full danger tone; weaker ones the
+// low-intensity tone, matching how the source site distinguishes them.
+export function playAlertRing(magnitude = 5): void {
+  ensure();
+  const a = magnitude >= 5 ? high : low;
+  if (!a) return;
+  try {
+    a.pause();
+    a.currentTime = 0;
+    a.volume = 1;
+    void a.play().catch(() => {});
+  } catch { /* ignore playback errors */ }
+}
+
+// Stop any alarm that is currently playing (e.g. when the alert is dismissed).
+export function stopAlertRing(): void {
+  [high, low].forEach((a) => {
+    if (!a) return;
+    a.pause();
+    a.currentTime = 0;
   });
 }

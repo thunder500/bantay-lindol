@@ -9,10 +9,35 @@ body,
   margin: 0;
 }
 
-/* Alert banner drop-in. */
-@keyframes eqDrop {
-  0%   { transform: translate(-50%, -16px); opacity: 0; }
-  100% { transform: translate(-50%, 0);  opacity: 1; }
+/* Emergency alert: flashing bar, pulsing screen edge, shaking warning icon. */
+.eq-emergency-bar {
+  animation: eqBarIn 0.25s ease-out, eqFlash 1s steps(1, end) infinite 0.25s;
+}
+@keyframes eqBarIn {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(0); }
+}
+@keyframes eqFlash {
+  0%, 49%   { filter: brightness(1); }
+  50%, 100% { filter: brightness(1.3); }
+}
+.eq-emergency-edge {
+  animation: eqEdge 1s ease-in-out infinite;
+}
+@keyframes eqEdge {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 1; }
+}
+.eq-emergency-icon {
+  animation: eqShake 0.5s ease-in-out infinite;
+  display: inline-block;
+}
+@keyframes eqShake {
+  0%, 100% { transform: rotate(-9deg); }
+  50%      { transform: rotate(9deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .eq-emergency-bar, .eq-emergency-edge, .eq-emergency-icon { animation: none; }
 }
 
 /* Fault / trench information popup, styled like the reference info card. */
