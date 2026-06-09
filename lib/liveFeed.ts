@@ -9,8 +9,10 @@
 // singleton would NOT be shared between /api/stream and other routes).
 import { fetchPhivolcs } from './sources/phivolcs';
 import { fetchUsgs } from './sources/usgs';
+import { fetchEmsc } from './sources/emsc';
 import { resolveSources } from './resolveSources';
 import { filterByRange } from './dateFilter';
+import { eventKey } from './eventKey';
 import { Quake } from './types';
 
 export type LiveMsg = { type: 'snapshot' | 'new'; quakes: Quake[]; fetchedAt: number };
@@ -52,16 +54,19 @@ async function poll(): Promise<void> {
   state.busy = true;
   try {
     const today = todayYmd();
-    const [ph, us] = await Promise.all([
+    const [ph, us, em] = await Promise.all([
       settle(fetchPhivolcs()),
       settle(fetchUsgs({ start: today, end: today })),
+      settle(fetchEmsc({ start: today, end: today })),
     ]);
-    const { quakes, failed } = resolveSources(ph, us);
+    const { quakes, failed } = resolveSources(ph, us, em);
     if (failed) return;
     const ranged = filterByRange(quakes, today, today);
     state.snapshot = ranged;
-    const fresh = ranged.filter((q) => !state.seen.has(q.id));
-    ranged.forEach((q) => state.seen.add(q.id));
+    // De-dup by source-independent event key so the same quake from EMSC then
+    // PHIVOLCS does not fire twice.
+    const fresh = ranged.filter((q) => !state.seen.has(eventKey(q)));
+    ranged.forEach((q) => state.seen.add(eventKey(q)));
     const fetchedAt = Date.now();
     if (!state.primed) {
       state.primed = true;

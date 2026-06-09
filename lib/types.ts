@@ -1,4 +1,4 @@
-export type QuakeSource = 'phivolcs' | 'usgs';
+export type QuakeSource = 'phivolcs' | 'usgs' | 'emsc';
 
 export interface Quake {
   id: string;          // stable: `${source}:${time}:${lat}:${lon}` rounded

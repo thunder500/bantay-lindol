@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { fetchPhivolcs } from '@/lib/sources/phivolcs';
 import { fetchUsgs } from '@/lib/sources/usgs';
+import { fetchEmsc } from '@/lib/sources/emsc';
 import { resolveSources } from '@/lib/resolveSources';
 import { TtlCache } from '@/lib/cache';
 import { sanitizeRange, rangeIncludesToday, rangeKey } from '@/lib/dateRange';
@@ -43,12 +44,13 @@ export default async function handler(
 
   const includeRecent = rangeIncludesToday(end, todayYmd());
 
-  const [phivolcs, usgs] = await Promise.all([
+  const [phivolcs, usgs, emsc] = await Promise.all([
     includeRecent ? settle(fetchPhivolcs()) : Promise.resolve(null),
     settle(fetchUsgs({ start, end })),
+    settle(fetchEmsc({ start, end })),
   ]);
 
-  const { quakes, sourcesUsed, failed } = resolveSources(phivolcs, usgs);
+  const { quakes, sourcesUsed, failed } = resolveSources(phivolcs, usgs, emsc);
 
   if (failed) {
     const stale = cache.peek();

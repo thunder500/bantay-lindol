@@ -5,6 +5,7 @@ import { applyFilters, FilterState } from '@/lib/filters';
 import { computeStats } from '@/lib/stats';
 import { monthOptions, monthBounds } from '@/lib/months';
 import { playAlertRing, primeAudio, stopAlertRing } from '@/lib/alertSound';
+import { eventKey } from '@/lib/eventKey';
 import type { Basemap } from '@/components/QuakeMap';
 import ControlPanel from '@/components/ControlPanel';
 import PeriodControls from '@/components/PeriodControls';
@@ -58,14 +59,14 @@ export default function Home() {
       const json: EarthquakeApiResponse = await res.json();
       if (seenIds.current.size > 0 && alertOn) {
         const fresh = json.quakes.filter(
-          (q) => !seenIds.current.has(q.id) && q.magnitude >= alertMinRef.current,
+          (q) => !seenIds.current.has(eventKey(q)) && q.magnitude >= alertMinRef.current,
         );
         if (fresh.length > 0) {
           const strongest = fresh.reduce((a, b) => (b.magnitude > a.magnitude ? b : a));
           raiseAlert(strongest);
         }
       }
-      json.quakes.forEach((q) => seenIds.current.add(q.id));
+      json.quakes.forEach((q) => seenIds.current.add(eventKey(q)));
       setData(json);
     } catch { /* keep last good data */ }
   }, [start, end, alertOn]);
@@ -99,12 +100,13 @@ export default function Home() {
       let msg: { type: string; quakes: Quake[] };
       try { msg = JSON.parse(e.data); } catch { return; }
       if (msg.type === 'snapshot') {
-        msg.quakes.forEach((q) => seenIds.current.add(q.id));
+        msg.quakes.forEach((q) => seenIds.current.add(eventKey(q)));
       } else if (msg.type === 'new') {
         let strongest: Quake | null = null;
         for (const q of msg.quakes) {
-          if (seenIds.current.has(q.id)) continue;
-          seenIds.current.add(q.id);
+          const k = eventKey(q);
+          if (seenIds.current.has(k)) continue;
+          seenIds.current.add(k);
           if (alertOnRef.current && q.magnitude >= alertMinRef.current
               && (!strongest || q.magnitude > strongest.magnitude)) strongest = q;
         }
