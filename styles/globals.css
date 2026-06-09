@@ -9,6 +9,12 @@ body,
   margin: 0;
 }
 
+/* Alert banner drop-in. */
+@keyframes eqDrop {
+  0%   { transform: translate(-50%, -16px); opacity: 0; }
+  100% { transform: translate(-50%, 0);  opacity: 1; }
+}
+
 /* Fault / trench information popup, styled like the reference info card. */
 .eq-info-popup .leaflet-popup-content-wrapper {
   border-radius: 6px;

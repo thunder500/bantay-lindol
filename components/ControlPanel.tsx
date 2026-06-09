@@ -18,7 +18,7 @@ export default function ControlPanel({ filters, onChange }: Props) {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-xs uppercase tracking-wide text-white/70">Magnitude Range</label>
+        <label className="text-xs uppercase tracking-wide text-white/70">Earthquake strength</label>
         <select
           value={filters.minMag}
           onChange={(e) => onChange({ ...filters, minMag: Number(e.target.value) })}
@@ -28,13 +28,15 @@ export default function ControlPanel({ filters, onChange }: Props) {
             <option key={o.value} value={o.value} className="text-black">{o.label}</option>
           ))}
         </select>
+        <p className="text-[11px] text-white/45 mt-1">Show quakes this strong or stronger.</p>
       </div>
       <div>
         <label className="text-xs uppercase tracking-wide text-white/70">
-          Max depth: {filters.maxDepth} km
+          How deep: up to {filters.maxDepth} km
         </label>
         <input type="range" min={10} max={700} step={10} value={filters.maxDepth} className="w-full"
           onChange={(e) => onChange({ ...filters, maxDepth: Number(e.target.value) })} />
+        <p className="text-[11px] text-white/45">Hide quakes deeper than this.</p>
       </div>
     </div>
   );
