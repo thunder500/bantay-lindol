@@ -72,9 +72,16 @@ export default function Home() {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 60_000);
+    const t = setInterval(load, 20_000);
     return () => clearInterval(t);
   }, [load]);
+
+  // 1s ticker so the "updated Xs ago" live indicator counts up.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   // Alert is on by default; ask for notification permission and unlock audio
   // (browsers block sound until the first user gesture).
@@ -167,6 +174,19 @@ export default function Home() {
         <header>
           <h1 className="text-white font-bold text-lg drop-shadow">BantayLindol</h1>
           <p className="text-white/60 text-xs">Philippine Earthquake Monitor</p>
+          <div className="flex items-center gap-2 mt-1 text-[11px]">
+            <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              LIVE
+            </span>
+            {data && (
+              <span className="text-white/45">
+                updated {Math.max(0, Math.round((Date.now() - data.fetchedAt) / 1000))}s ago
+              </span>
+            )}
+            <button type="button" onClick={load} title="Refresh now"
+                    className="text-white/60 hover:text-white">↻</button>
+          </div>
         </header>
         <EventLog quakes={visible} selectedId={selected?.id} onSelect={setSelected} />
       </div>

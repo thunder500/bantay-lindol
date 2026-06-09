@@ -11,7 +11,9 @@ import { EarthquakeApiResponse } from '@/lib/types';
 const caches = new Map<string, TtlCache<EarthquakeApiResponse>>();
 function cacheFor(key: string): TtlCache<EarthquakeApiResponse> {
   let c = caches.get(key);
-  if (!c) { c = new TtlCache<EarthquakeApiResponse>(60_000); caches.set(key, c); }
+  // Short TTL so data stays near-live, while still shielding PHIVOLCS from being
+  // scraped on every single client request.
+  if (!c) { c = new TtlCache<EarthquakeApiResponse>(15_000); caches.set(key, c); }
   return c;
 }
 
