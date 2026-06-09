@@ -9,6 +9,50 @@ body,
   margin: 0;
 }
 
+/* Fault / trench information popup, styled like the reference info card. */
+.eq-info-popup .leaflet-popup-content-wrapper {
+  border-radius: 6px;
+  padding: 0;
+  overflow: hidden;
+}
+.eq-info-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+.eq-info {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  color: #1f2937;
+}
+.eq-info-title {
+  background: #1f9fb6;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  padding: 8px 12px;
+}
+.eq-info table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.eq-info th,
+.eq-info td {
+  border: 1px solid #e5e7eb;
+  padding: 5px 10px;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+.eq-info th {
+  font-weight: 600;
+  color: #374151;
+  background: #f9fafb;
+}
+.eq-info td {
+  color: #0f766e;
+  font-weight: 600;
+}
+
 /* Latest-earthquake sonar ping: concentric rings expanding outward. */
 .eq-sonar-icon { position: relative; }
 .eq-sonar-icon .eq-ring {

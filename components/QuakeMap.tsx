@@ -4,7 +4,7 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { FeatureCollection } from 'geojson';
+import type { Feature, FeatureCollection } from 'geojson';
 import { Quake } from '@/lib/types';
 import { depthColor, magRadius } from '@/lib/markerStyle';
 import { VOLCANOES } from '@/lib/volcanoes';
@@ -38,6 +38,45 @@ const volcanoIcon = L.divIcon({
   iconAnchor: [7, 12],
 });
 
+// Wider hit area so thin fault/trench lines are easy to click.
+const lineRenderer = L.canvas({ tolerance: 8 });
+
+function esc(s: string): string {
+  return s.replace(/[&<>"]/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+}
+
+function infoCard(title: string, rows: [string, string][]): string {
+  const body = rows
+    .filter(([, v]) => v)
+    .map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`)
+    .join('');
+  return `<div class="eq-info"><div class="eq-info-title">${title}</div><table>${body}</table></div>`;
+}
+
+function bindFaultPopup(feature: Feature, layer: L.Layer) {
+  const p = (feature.properties ?? {}) as { name?: string; slip?: string };
+  layer.bindPopup(
+    infoCard('ACTIVE FAULT INFORMATION', [
+      ['Fault Name', p.name || 'Unnamed active fault'],
+      ['Movement', p.slip || ''],
+      ['Data Source', 'GEM Global Active Faults'],
+    ]),
+    { className: 'eq-info-popup' },
+  );
+}
+
+function bindTrenchPopup(feature: Feature, layer: L.Layer) {
+  const p = (feature.properties ?? {}) as { name?: string; source?: string };
+  layer.bindPopup(
+    infoCard('TRENCH INFORMATION', [
+      ['Trench Name', p.name || 'Trench'],
+      ['Data Source', p.source || 'DOST-PHIVOLCS'],
+    ]),
+    { className: 'eq-info-popup' },
+  );
+}
+
 // Frame the Philippines on mount and lock the minimum zoom to that framing.
 function FramePhilippines() {
   const map = useMap();
@@ -46,6 +85,9 @@ function FramePhilippines() {
     const z = map.getZoom();
     map.setMinZoom(z);
     map.setMaxBounds(PAN_BOUNDS);
+    if (process.env.NODE_ENV !== 'production') {
+      (window as unknown as { __map?: L.Map }).__map = map;
+    }
   }, [map]);
   return null;
 }
@@ -72,20 +114,21 @@ export default function QuakeMap({
 
   return (
     <MapContainer center={[12.5, 122]} zoom={6} className="h-full w-full"
-                  zoomControl={false} preferCanvas style={{ background: '#0b1220' }}>
+                  zoomControl={false} preferCanvas renderer={lineRenderer}
+                  style={{ background: '#0b1220' }}>
       <FramePhilippines />
       <ZoomControl position="bottomleft" />
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; OpenStreetMap &copy; CARTO | Data: PHIVOLCS, USGS, GEM, Bird (2003)'
+        attribution='&copy; OpenStreetMap &copy; CARTO | Data: PHIVOLCS, USGS, GEM'
       />
 
       {showTrenches && trenches && (
-        <GeoJSON key="trenches" data={trenches}
-                 style={{ color: '#a855f7', weight: 2.5, opacity: 0.85, dashArray: '1 0' }} />
+        <GeoJSON key="trenches" data={trenches} onEachFeature={bindTrenchPopup}
+                 style={{ color: '#a855f7', weight: 3, opacity: 0.9 }} />
       )}
       {showFaults && faults && (
-        <GeoJSON key="faults" data={faults}
+        <GeoJSON key="faults" data={faults} onEachFeature={bindFaultPopup}
                  style={{ color: '#fb6a6a', weight: 2, opacity: 0.9, dashArray: '5 4' }} />
       )}
 
