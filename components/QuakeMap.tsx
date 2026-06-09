@@ -151,7 +151,7 @@ export default function QuakeMap({
       )}
       {showFaults && faults && (
         <GeoJSON key="faults" data={faults} onEachFeature={bindFaultPopup}
-                 style={{ color: '#fb6a6a', weight: 2, opacity: 0.9, dashArray: '5 4' }} />
+                 style={{ color: '#fb6a6a', weight: 1.6, opacity: 0.95 }} />
       )}
 
       {showVolcanoes && VOLCANOES.map((v) => (
