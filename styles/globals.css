@@ -116,14 +116,15 @@ body,
   100% { width: 72px; height: 72px; margin: -36px 0 0 -36px;   opacity: 0;   border-width: 1px; }
 }
 
-/* Trench subduction barb (right-pointing triangle, rotated to the line). */
+/* Trench subduction barb. Triangle points to the overriding-plate side (toward
+   the Philippines); polylineDecorator rotates it to the line bearing. */
 .eq-tooth {
   display: block;
   width: 0;
   height: 0;
   border-top: 4px solid transparent;
   border-bottom: 4px solid transparent;
-  border-left: 7px solid #a855f7;
+  border-right: 7px solid #a855f7;
 }
 
 /* Active-volcano marker: red triangle. */

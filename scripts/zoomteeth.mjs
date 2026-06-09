@@ -6,8 +6,13 @@ await page.goto('http://localhost:3000', { waitUntil: 'domcontentloaded', timeou
 await page.waitForTimeout(6000);
 await page.getByRole('button', { name: 'Streets' }).click();
 await page.waitForTimeout(2500);
-await page.evaluate(() => { window.__map.setView([14.5, 119.6], 7); }); // Manila Trench west Luzon
-await page.waitForTimeout(3500);
-await page.screenshot({ path: 'teeth-zoom.png' });
-console.log('saved teeth-zoom.png');
+async function shot(lat, lon, zoom, name) {
+  await page.evaluate(([la, lo, z]) => { window.__map.setView([la, lo], z); }, [lat, lon, zoom]);
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: name });
+  console.log('saved', name);
+}
+await shot(5.6, 123.9, 8, 'teeth-cotabato.png');   // Cotabato Trench (user's view)
+await shot(15.0, 119.4, 7, 'teeth-manila.png');     // Manila Trench
+await shot(8.5, 126.6, 7, 'teeth-philippine.png');  // Philippine Trench
 await browser.close();

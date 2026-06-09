@@ -36,6 +36,7 @@ yarn-error.log*
 shot*.png
 verify*.png
 teeth*.png
+toothdir*.png
 dense*.png
 final*.png
 devserver*.log
