@@ -122,9 +122,9 @@ body,
   display: block;
   width: 0;
   height: 0;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  border-right: 9px solid #a855f7;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-right: 8px solid #a855f7;
 }
 
 /* Active-volcano marker: red triangle. */

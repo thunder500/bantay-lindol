@@ -30,8 +30,8 @@ export default function TrenchTeeth({ data }: { data: FeatureCollection | null }
         const latlngs = line.map(([lon, lat]) => L.latLng(lat, lon));
         const dec = (L as any).polylineDecorator(latlngs, {
           patterns: [{
-            offset: 6,
-            repeat: 12,
+            offset: 14,
+            repeat: 26,
             symbol: (L as any).Symbol.marker({
               rotate: true,
               markerOptions: { icon: toothIcon, interactive: false, keyboard: false },
