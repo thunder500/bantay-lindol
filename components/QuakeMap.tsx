@@ -170,10 +170,10 @@ export default function QuakeMap({
           center={[q.lat, q.lon]}
           radius={magRadius(q.magnitude)}
           pathOptions={{
-            color: q.id === newest?.id ? '#ffffff' : depthColor(q.depthKm),
-            weight: q.id === newest?.id ? 2 : 1,
+            color: q.id === newest?.id ? '#ffffff' : 'rgba(0,0,0,0.75)',
+            weight: q.id === newest?.id ? 2 : 1.2,
             fillColor: depthColor(q.depthKm),
-            fillOpacity: 0.85,
+            fillOpacity: 0.9,
           }}
           eventHandlers={{ click: () => onSelect(q) }}
         >

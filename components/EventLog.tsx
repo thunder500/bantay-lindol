@@ -7,8 +7,15 @@ interface Props {
   onSelect: (q: Quake) => void;
 }
 
-// Easy-to-read relative time: "just now", "5m ago", "2h ago", "3d ago",
-// falling back to a short PHT date for anything older than a week.
+// Exact PHT clock time, e.g. "Jun 9, 2:05 PM".
+function exactTime(ms: number): string {
+  return new Date(ms).toLocaleString('en-US', {
+    timeZone: 'Asia/Manila',
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true,
+  });
+}
+
+// Short relative time as a secondary hint: "5m ago", "2h ago", "3d ago".
 function relTime(ms: number, now: number): string {
   const s = Math.max(0, Math.round((now - ms) / 1000));
   if (s < 45) return 'just now';
@@ -17,19 +24,7 @@ function relTime(ms: number, now: number): string {
   const h = Math.round(m / 60);
   if (h < 24) return `${h}h ago`;
   const d = Math.round(h / 24);
-  if (d < 7) return `${d}d ago`;
-  return new Date(ms).toLocaleDateString('en-US', {
-    timeZone: 'Asia/Manila', month: 'short', day: 'numeric',
-  });
-}
-
-// Full PHT timestamp for the hover tooltip.
-function fullPht(ms: number): string {
-  return new Date(ms).toLocaleString('en-US', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit', hour12: true,
-  }) + ' PHT';
+  return `${d}d ago`;
 }
 
 export default function EventLog({ quakes, selectedId, onSelect }: Props) {
@@ -51,19 +46,23 @@ export default function EventLog({ quakes, selectedId, onSelect }: Props) {
               <button
                 type="button"
                 onClick={() => onSelect(q)}
-                className={`w-full text-left px-3 py-1.5 flex items-center gap-2 transition-colors
+                className={`w-full text-left px-3 py-1.5 flex flex-col gap-0.5 transition-colors
                             ${q.id === selectedId ? 'bg-white/15' : 'hover:bg-white/10'}`}
               >
-                <span className="w-2 h-2 rounded-full shrink-0"
-                      style={{ background: depthColor(q.depthKm) }} />
-                <span className="font-semibold tabular-nums w-10 shrink-0">
-                  M{q.magnitude.toFixed(1)}
-                </span>
-                <span className="text-white/50 text-[11px] tabular-nums shrink-0 w-16"
-                      title={fullPht(q.time)}>
-                  {relTime(q.time, now)}
-                </span>
-                <span className="text-white/80 text-[11px] truncate flex-1">{q.location}</span>
+                <div className="flex items-center gap-2 w-full">
+                  <span className="w-2 h-2 rounded-full shrink-0"
+                        style={{ background: depthColor(q.depthKm) }} />
+                  <span className="font-semibold tabular-nums w-10 shrink-0">
+                    M{q.magnitude.toFixed(1)}
+                  </span>
+                  <span className="text-white/80 text-[11px] tabular-nums">
+                    {exactTime(q.time)}
+                  </span>
+                  <span className="text-white/40 text-[10px] tabular-nums ml-auto shrink-0">
+                    {relTime(q.time, now)}
+                  </span>
+                </div>
+                <div className="text-white/70 text-[11px] truncate w-full pl-4">{q.location}</div>
               </button>
             </li>
           ))}

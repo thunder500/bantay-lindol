@@ -9,8 +9,8 @@ import type { FeatureCollection, Position } from 'geojson';
 const toothIcon = L.divIcon({
   className: 'eq-tooth-icon',
   html: '<span class="eq-tooth"></span>',
-  iconSize: [10, 10],
-  iconAnchor: [5, 5],
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
 });
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -30,8 +30,8 @@ export default function TrenchTeeth({ data }: { data: FeatureCollection | null }
         const latlngs = line.map(([lon, lat]) => L.latLng(lat, lon));
         const dec = (L as any).polylineDecorator(latlngs, {
           patterns: [{
-            offset: 10,
-            repeat: 16,
+            offset: 6,
+            repeat: 12,
             symbol: (L as any).Symbol.marker({
               rotate: true,
               markerOptions: { icon: toothIcon, interactive: false, keyboard: false },
