@@ -3,6 +3,10 @@
 // notified the instant a new quake is detected instead of waiting for its own
 // refresh. PHIVOLCS has no push/webhook, so we still poll them — but tightly,
 // and fan out instantly on detection.
+//
+// State lives on globalThis so it is a single shared instance across all API
+// route modules (Next.js bundles each route separately; a plain module-level
+// singleton would NOT be shared between /api/stream and other routes).
 import { fetchPhivolcs } from './sources/phivolcs';
 import { fetchUsgs } from './sources/usgs';
 import { resolveSources } from './resolveSources';
@@ -14,12 +18,24 @@ type Listener = (msg: LiveMsg) => void;
 
 const POLL_MS = 10_000;
 
-const listeners = new Set<Listener>();
-const seen = new Set<string>();
-let snapshot: Quake[] = [];
-let timer: ReturnType<typeof setInterval> | null = null;
-let busy = false;
-let primed = false;
+interface LiveState {
+  listeners: Set<Listener>;
+  seen: Set<string>;
+  snapshot: Quake[];
+  timer: ReturnType<typeof setInterval> | null;
+  busy: boolean;
+  primed: boolean;
+}
+
+const g = globalThis as unknown as { __bantayLive?: LiveState };
+const state: LiveState = g.__bantayLive ?? (g.__bantayLive = {
+  listeners: new Set(),
+  seen: new Set(),
+  snapshot: [],
+  timer: null,
+  busy: false,
+  primed: false,
+});
 
 function todayYmd(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
@@ -28,12 +44,12 @@ async function settle<T>(p: Promise<T>): Promise<T | null> {
   try { return await p; } catch { return null; }
 }
 function broadcast(msg: LiveMsg) {
-  listeners.forEach((l) => { try { l(msg); } catch { /* ignore */ } });
+  state.listeners.forEach((l) => { try { l(msg); } catch { /* ignore */ } });
 }
 
 async function poll(): Promise<void> {
-  if (busy) return;
-  busy = true;
+  if (state.busy) return;
+  state.busy = true;
   try {
     const today = todayYmd();
     const [ph, us] = await Promise.all([
@@ -43,39 +59,44 @@ async function poll(): Promise<void> {
     const { quakes, failed } = resolveSources(ph, us);
     if (failed) return;
     const ranged = filterByRange(quakes, today, today);
-    snapshot = ranged;
-    const fresh = ranged.filter((q) => !seen.has(q.id));
-    ranged.forEach((q) => seen.add(q.id));
+    state.snapshot = ranged;
+    const fresh = ranged.filter((q) => !state.seen.has(q.id));
+    ranged.forEach((q) => state.seen.add(q.id));
     const fetchedAt = Date.now();
-    if (!primed) {
-      primed = true;
+    if (!state.primed) {
+      state.primed = true;
       broadcast({ type: 'snapshot', quakes: ranged, fetchedAt });
       return;
     }
     if (fresh.length > 0) broadcast({ type: 'new', quakes: fresh, fetchedAt });
   } finally {
-    busy = false;
+    state.busy = false;
   }
 }
 
 function ensureRunning(): void {
-  if (timer) return;
+  if (state.timer) return;
   void poll();
-  timer = setInterval(() => void poll(), POLL_MS);
+  state.timer = setInterval(() => void poll(), POLL_MS);
 }
 function maybeStop(): void {
-  if (listeners.size === 0 && timer) {
-    clearInterval(timer);
-    timer = null;
-    primed = false;
+  if (state.listeners.size === 0 && state.timer) {
+    clearInterval(state.timer);
+    state.timer = null;
+    state.primed = false;
   }
 }
 
+// Dev-only: push a synthetic "new" event to verify the live-push path.
+export function debugBroadcastNew(quake: Quake): void {
+  broadcast({ type: 'new', quakes: [quake], fetchedAt: Date.now() });
+}
+
 export function subscribe(listener: Listener): () => void {
-  listeners.add(listener);
+  state.listeners.add(listener);
   ensureRunning();
-  if (snapshot.length > 0) {
-    listener({ type: 'snapshot', quakes: snapshot, fetchedAt: Date.now() });
+  if (state.snapshot.length > 0) {
+    listener({ type: 'snapshot', quakes: state.snapshot, fetchedAt: Date.now() });
   }
-  return () => { listeners.delete(listener); maybeStop(); };
+  return () => { state.listeners.delete(listener); maybeStop(); };
 }
