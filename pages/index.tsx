@@ -31,6 +31,9 @@ export default function Home() {
   const [selected, setSelected] = useState<Quake | null>(null);
   const [displayResults, setDisplayResults] = useState(true);
   const [alertOn, setAlertOn] = useState(false);
+  const [showFaults, setShowFaults] = useState(true);
+  const [showTrenches, setShowTrenches] = useState(true);
+  const [showVolcanoes, setShowVolcanoes] = useState(true);
   const seenIds = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
@@ -94,7 +97,10 @@ export default function Home() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#0b1220]">
-      <QuakeMap quakes={mapQuakes} newest={mapNewest} onSelect={setSelected} />
+      <QuakeMap
+        quakes={mapQuakes} newest={mapNewest} onSelect={setSelected}
+        showFaults={showFaults} showTrenches={showTrenches} showVolcanoes={showVolcanoes}
+      />
 
       <header className="absolute top-4 left-4 z-[1000]">
         <h1 className="text-white font-bold text-lg drop-shadow">BantayLindol</h1>
@@ -117,6 +123,12 @@ export default function Home() {
             <span className="font-bold">{total}</span>
           </div>
           <Toggle label="Display Results" checked={displayResults} onChange={setDisplayResults} />
+          <div className="border-t border-white/10 pt-3 space-y-2">
+            <div className="text-xs uppercase tracking-wide text-white/50">Map Layers</div>
+            <Toggle label="Active Faults" checked={showFaults} onChange={setShowFaults} />
+            <Toggle label="Trenches" checked={showTrenches} onChange={setShowTrenches} />
+            <Toggle label="Volcanoes" checked={showVolcanoes} onChange={setShowVolcanoes} />
+          </div>
           {data?.stale && (
             <div className="text-amber-300 text-xs bg-amber-900/40 rounded p-2">
               Live sources unavailable, showing last cached data.

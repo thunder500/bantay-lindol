@@ -21,6 +21,23 @@ export default function Legend() {
           </li>
         ))}
       </ul>
+      <div className="font-semibold mt-3 mb-2 tracking-wide">TECTONICS</div>
+      <ul className="space-y-1">
+        <li className="flex items-center gap-2">
+          <span className="inline-block w-4 border-t-2 border-dashed"
+                style={{ borderColor: '#f87171' }} />
+          Active fault
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="inline-block w-4 border-t-2" style={{ borderColor: '#a855f7' }} />
+          Trench
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="inline-block w-0 h-0"
+                style={{ borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '9px solid #f97316' }} />
+          Active volcano
+        </li>
+      </ul>
     </div>
   );
 }

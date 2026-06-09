@@ -1,31 +1,100 @@
-import { MapContainer, TileLayer, CircleMarker, Popup, ZoomControl, Marker } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import {
+  MapContainer, TileLayer, CircleMarker, Popup, ZoomControl, Marker, GeoJSON, useMap,
+} from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import type { FeatureCollection } from 'geojson';
 import { Quake } from '@/lib/types';
 import { depthColor, magRadius } from '@/lib/markerStyle';
+import { VOLCANOES } from '@/lib/volcanoes';
 
 interface Props {
   quakes: Quake[];
   newest?: Quake;
   onSelect: (q: Quake) => void;
+  showFaults: boolean;
+  showTrenches: boolean;
+  showVolcanoes: boolean;
 }
 
+// Philippine archipelago framing. Map cannot zoom out past this and cannot pan away.
+const PH_BOUNDS = L.latLngBounds([4, 116], [21.5, 127.5]);
+const PAN_BOUNDS = L.latLngBounds([0, 111], [25, 133]);
+
 const pulseIcon = L.divIcon({
-  className: 'eq-pulse-icon',
-  html: '<span class="eq-pulse-ring"></span>',
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
+  className: 'eq-sonar-icon',
+  html:
+    '<span class="eq-ring"></span><span class="eq-ring"></span>' +
+    '<span class="eq-ring"></span><span class="eq-core"></span>',
+  iconSize: [80, 80],
+  iconAnchor: [40, 40],
 });
 
-export default function QuakeMap({ quakes, newest, onSelect }: Props) {
+const volcanoIcon = L.divIcon({
+  className: 'eq-volcano-icon',
+  html: '<span class="eq-volcano"></span>',
+  iconSize: [14, 14],
+  iconAnchor: [7, 12],
+});
+
+// Frame the Philippines on mount and lock the minimum zoom to that framing.
+function FramePhilippines() {
+  const map = useMap();
+  useEffect(() => {
+    map.fitBounds(PH_BOUNDS);
+    const z = map.getZoom();
+    map.setMinZoom(z);
+    map.setMaxBounds(PAN_BOUNDS);
+  }, [map]);
+  return null;
+}
+
+function useGeoJson(url: string, enabled: boolean) {
+  const [data, setData] = useState<FeatureCollection | null>(null);
+  useEffect(() => {
+    if (!enabled || data) return;
+    let alive = true;
+    fetch(url)
+      .then((r) => r.json())
+      .then((j) => { if (alive) setData(j); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [url, enabled, data]);
+  return data;
+}
+
+export default function QuakeMap({
+  quakes, newest, onSelect, showFaults, showTrenches, showVolcanoes,
+}: Props) {
+  const faults = useGeoJson('/geo/faults.geojson', showFaults);
+  const trenches = useGeoJson('/geo/trenches.geojson', showTrenches);
+
   return (
     <MapContainer center={[12.5, 122]} zoom={6} className="h-full w-full"
                   zoomControl={false} preferCanvas style={{ background: '#0b1220' }}>
+      <FramePhilippines />
       <ZoomControl position="bottomleft" />
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; OpenStreetMap &copy; CARTO | Data: PHIVOLCS, USGS'
+        attribution='&copy; OpenStreetMap &copy; CARTO | Data: PHIVOLCS, USGS, GEM, Bird (2003)'
       />
+
+      {showTrenches && trenches && (
+        <GeoJSON key="trenches" data={trenches}
+                 style={{ color: '#a855f7', weight: 2.5, opacity: 0.85, dashArray: '1 0' }} />
+      )}
+      {showFaults && faults && (
+        <GeoJSON key="faults" data={faults}
+                 style={{ color: '#fb6a6a', weight: 2, opacity: 0.9, dashArray: '5 4' }} />
+      )}
+
+      {showVolcanoes && VOLCANOES.map((v) => (
+        <Marker key={v.name} position={[v.lat, v.lon]} icon={volcanoIcon}>
+          <Popup>🌋 <strong>{v.name}</strong><br />Active volcano</Popup>
+        </Marker>
+      ))}
+
       {newest && (
         <Marker position={[newest.lat, newest.lon]} icon={pulseIcon}
                 interactive={false} zIndexOffset={1000} />
