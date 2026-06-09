@@ -6,11 +6,14 @@ import type { FeatureCollection, Position } from 'geojson';
 
 // Right-pointing triangle; polylineDecorator rotates it to the line bearing so
 // it ends up perpendicular to the trench, reading as a subduction barb.
+// The triangle (border-right) has its base on the RIGHT edge (x=8, center y=4)
+// and apex on the left. We anchor that base point onto the trench line and pivot
+// rotation there, so the barb sits ON the line and the apex points inward.
 const toothIcon = L.divIcon({
   className: 'eq-tooth-icon',
   html: '<span class="eq-tooth"></span>',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
+  iconSize: [8, 8],
+  iconAnchor: [8, 4],
 });
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -34,7 +37,10 @@ export default function TrenchTeeth({ data }: { data: FeatureCollection | null }
             repeat: 26,
             symbol: (L as any).Symbol.marker({
               rotate: true,
-              markerOptions: { icon: toothIcon, interactive: false, keyboard: false },
+              markerOptions: {
+                icon: toothIcon, interactive: false, keyboard: false,
+                rotationOrigin: '8px 4px',
+              },
             }),
           }],
         });
