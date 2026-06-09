@@ -18,9 +18,9 @@ interface Props {
   showVolcanoes: boolean;
 }
 
-// Philippine archipelago framing. Map cannot zoom out past this and cannot pan away.
-const PH_BOUNDS = L.latLngBounds([4, 116], [21.5, 127.5]);
-const PAN_BOUNDS = L.latLngBounds([0, 111], [25, 133]);
+// Philippine archipelago framing. Map cannot zoom out far past this and cannot pan away.
+const PH_BOUNDS = L.latLngBounds([3, 114], [22, 129]);
+const PAN_BOUNDS = L.latLngBounds([-3, 106], [28, 138]);
 
 const pulseIcon = L.divIcon({
   className: 'eq-sonar-icon',
@@ -81,9 +81,9 @@ function bindTrenchPopup(feature: Feature, layer: L.Layer) {
 function FramePhilippines() {
   const map = useMap();
   useEffect(() => {
-    map.fitBounds(PH_BOUNDS);
+    map.fitBounds(PH_BOUNDS, { padding: [40, 24] });
     const z = map.getZoom();
-    map.setMinZoom(z);
+    map.setMinZoom(z - 0.5);
     map.setMaxBounds(PAN_BOUNDS);
     if (process.env.NODE_ENV !== 'production') {
       (window as unknown as { __map?: L.Map }).__map = map;
@@ -115,7 +115,7 @@ export default function QuakeMap({
   return (
     <MapContainer center={[12.5, 122]} zoom={6} className="h-full w-full"
                   zoomControl={false} preferCanvas renderer={lineRenderer}
-                  style={{ background: '#0b1220' }}>
+                  zoomSnap={0.5} style={{ background: '#0b1220' }}>
       <FramePhilippines />
       <ZoomControl position="bottomleft" />
       <TileLayer

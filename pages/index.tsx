@@ -10,6 +10,7 @@ import Toggle from '@/components/Toggle';
 import DetailCard from '@/components/DetailCard';
 import StatsStrip from '@/components/StatsStrip';
 import Legend from '@/components/Legend';
+import EventLog from '@/components/EventLog';
 
 const QuakeMap = dynamic(() => import('@/components/QuakeMap'), { ssr: false });
 
@@ -102,10 +103,13 @@ export default function Home() {
         showFaults={showFaults} showTrenches={showTrenches} showVolcanoes={showVolcanoes}
       />
 
-      <header className="absolute top-4 left-4 z-[1000]">
-        <h1 className="text-white font-bold text-lg drop-shadow">BantayLindol</h1>
-        <p className="text-white/60 text-xs">Philippine Earthquake Monitor</p>
-      </header>
+      <div className="absolute top-4 left-4 z-[1000] space-y-3">
+        <header>
+          <h1 className="text-white font-bold text-lg drop-shadow">BantayLindol</h1>
+          <p className="text-white/60 text-xs">Philippine Earthquake Monitor</p>
+        </header>
+        <EventLog quakes={visible} selectedId={selected?.id} onSelect={setSelected} />
+      </div>
 
       <div className="absolute top-4 right-4 z-[1000] w-80 max-h-[calc(100vh-2rem)] overflow-y-auto space-y-3">
         {data && <StatsStrip stats={stats} sourcesUsed={data.sourcesUsed} />}
