@@ -83,6 +83,38 @@ export default function Home() {
     return () => clearInterval(t);
   }, []);
 
+  // Live push (SSE): the server pushes new events the instant it detects them,
+  // so the alarm fires without waiting for the browser's refresh. Refs keep the
+  // single persistent connection using the latest handlers/state.
+  const alertOnRef = useRef(alertOn);
+  const raiseAlertRef = useRef<(q: Quake) => void>(() => {});
+  const loadRef = useRef(load);
+  alertOnRef.current = alertOn;
+  raiseAlertRef.current = raiseAlert;
+  loadRef.current = load;
+  useEffect(() => {
+    if (typeof EventSource === 'undefined') return;
+    const es = new EventSource('/api/stream');
+    es.onmessage = (e) => {
+      let msg: { type: string; quakes: Quake[] };
+      try { msg = JSON.parse(e.data); } catch { return; }
+      if (msg.type === 'snapshot') {
+        msg.quakes.forEach((q) => seenIds.current.add(q.id));
+      } else if (msg.type === 'new') {
+        let strongest: Quake | null = null;
+        for (const q of msg.quakes) {
+          if (seenIds.current.has(q.id)) continue;
+          seenIds.current.add(q.id);
+          if (alertOnRef.current && q.magnitude >= alertMinRef.current
+              && (!strongest || q.magnitude > strongest.magnitude)) strongest = q;
+        }
+        if (strongest) raiseAlertRef.current(strongest);
+        loadRef.current();
+      }
+    };
+    return () => es.close();
+  }, []);
+
   // Alert is on by default; ask for notification permission and unlock audio
   // (browsers block sound until the first user gesture).
   useEffect(() => {
