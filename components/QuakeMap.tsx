@@ -55,23 +55,24 @@ function infoCard(title: string, rows: [string, string][]): string {
 }
 
 function bindFaultPopup(feature: Feature, layer: L.Layer) {
-  const p = (feature.properties ?? {}) as { name?: string; slip?: string };
+  const p = (feature.properties ?? {}) as { name?: string; desc?: string };
   layer.bindPopup(
     infoCard('ACTIVE FAULT INFORMATION', [
       ['Fault Name', p.name || 'Unnamed active fault'],
-      ['Movement', p.slip || ''],
-      ['Data Source', 'GEM Global Active Faults'],
+      ['Classification', p.desc || 'Active Fault'],
+      ['Data Source', 'DOST-PHIVOLCS'],
     ]),
     { className: 'eq-info-popup' },
   );
 }
 
 function bindTrenchPopup(feature: Feature, layer: L.Layer) {
-  const p = (feature.properties ?? {}) as { name?: string; source?: string };
+  const p = (feature.properties ?? {}) as { name?: string; desc?: string };
   layer.bindPopup(
     infoCard('TRENCH INFORMATION', [
-      ['Trench Name', p.name || 'Trench'],
-      ['Data Source', p.source || 'DOST-PHIVOLCS'],
+      ['Trench Name', p.name || p.desc || 'Trench'],
+      ['Classification', p.desc || 'Trench'],
+      ['Data Source', 'DOST-PHIVOLCS'],
     ]),
     { className: 'eq-info-popup' },
   );
@@ -120,7 +121,7 @@ export default function QuakeMap({
       <ZoomControl position="bottomleft" />
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; OpenStreetMap &copy; CARTO | Data: PHIVOLCS, USGS, GEM'
+        attribution='&copy; OpenStreetMap &copy; CARTO | Data: PHIVOLCS, USGS'
       />
 
       {showTrenches && trenches && (

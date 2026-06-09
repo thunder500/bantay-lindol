@@ -7,14 +7,33 @@ interface Props {
   onSelect: (q: Quake) => void;
 }
 
-function phtTime(ms: number): string {
-  return new Date(ms).toLocaleString('en-US', {
-    timeZone: 'Asia/Manila',
-    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+// Easy-to-read relative time: "just now", "5m ago", "2h ago", "3d ago",
+// falling back to a short PHT date for anything older than a week.
+function relTime(ms: number, now: number): string {
+  const s = Math.max(0, Math.round((now - ms) / 1000));
+  if (s < 45) return 'just now';
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.round(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(ms).toLocaleDateString('en-US', {
+    timeZone: 'Asia/Manila', month: 'short', day: 'numeric',
   });
 }
 
+// Full PHT timestamp for the hover tooltip.
+function fullPht(ms: number): string {
+  return new Date(ms).toLocaleString('en-US', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  }) + ' PHT';
+}
+
 export default function EventLog({ quakes, selectedId, onSelect }: Props) {
+  const now = Date.now();
   return (
     <div className="rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-white
                     w-72 max-h-[46vh] flex flex-col overflow-hidden shadow-lg">
@@ -40,8 +59,9 @@ export default function EventLog({ quakes, selectedId, onSelect }: Props) {
                 <span className="font-semibold tabular-nums w-10 shrink-0">
                   M{q.magnitude.toFixed(1)}
                 </span>
-                <span className="text-white/50 text-[11px] tabular-nums shrink-0 w-24">
-                  {phtTime(q.time)}
+                <span className="text-white/50 text-[11px] tabular-nums shrink-0 w-16"
+                      title={fullPht(q.time)}>
+                  {relTime(q.time, now)}
                 </span>
                 <span className="text-white/80 text-[11px] truncate flex-1">{q.location}</span>
               </button>

@@ -10,8 +10,13 @@ describe('markerStyle', () => {
     expect(depthColor(400)).toBe('#3b82f6');
   });
 
-  it('scales radius with magnitude monotonically', () => {
-    expect(magRadius(5)).toBeGreaterThan(magRadius(2));
-    expect(magRadius(1)).toBeGreaterThanOrEqual(3);
+  it('scales radius with magnitude, small quakes stay tiny', () => {
+    expect(magRadius(7)).toBeGreaterThan(magRadius(5));
+    expect(magRadius(5)).toBeGreaterThan(magRadius(3));
+    expect(magRadius(3)).toBeGreaterThan(magRadius(2));
+    // small magnitudes clamp to a tiny floor
+    expect(magRadius(1)).toBe(2);
+    expect(magRadius(0)).toBe(2);
+    expect(magRadius(2)).toBeLessThanOrEqual(3);
   });
 });

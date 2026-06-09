@@ -6,8 +6,10 @@ export function depthColor(depthKm: number): string {
   return '#3b82f6';
 }
 
-// Gradual size ramp so M1 reads as a tiny dot and M8 as a large circle,
-// matching the reference legend's magnitude-range sizes.
+// Size ramp with a wide dynamic range: small quakes read as tiny dots and
+// large ones as big circles (M2 ~2px, M3 ~4px, M5 ~9px, M7 ~15px), matching
+// the reference legend's magnitude-range sizes.
 export function magRadius(mag: number): number {
-  return Math.max(3, Math.round(Math.max(mag, 0) * 2));
+  const over = Math.max(mag - 1, 0);
+  return Math.max(2, 1.6 * Math.pow(over, 1.25));
 }
