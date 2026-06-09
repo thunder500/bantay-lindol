@@ -9,6 +9,8 @@ import { Quake } from '@/lib/types';
 import { depthColor, magRadius } from '@/lib/markerStyle';
 import { VOLCANOES } from '@/lib/volcanoes';
 
+export type Basemap = 'dark' | 'satellite' | 'streets';
+
 interface Props {
   quakes: Quake[];
   newest?: Quake;
@@ -16,7 +18,27 @@ interface Props {
   showFaults: boolean;
   showTrenches: boolean;
   showVolcanoes: boolean;
+  basemap: Basemap;
 }
+
+const DATA_CREDIT = 'Data: PHIVOLCS, USGS';
+const BASEMAPS: Record<Basemap, { url: string; subdomains: string | string[]; attribution: string }> = {
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    subdomains: 'abcd',
+    attribution: `&copy; OpenStreetMap &copy; CARTO | ${DATA_CREDIT}`,
+  },
+  satellite: {
+    url: 'https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    attribution: `Imagery &copy; Google | ${DATA_CREDIT}`,
+  },
+  streets: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    subdomains: 'abc',
+    attribution: `&copy; OpenStreetMap contributors | ${DATA_CREDIT}`,
+  },
+};
 
 // Philippine archipelago framing. Map cannot zoom out far past this and cannot pan away.
 const PH_BOUNDS = L.latLngBounds([3, 114], [22, 129]);
@@ -108,10 +130,11 @@ function useGeoJson(url: string, enabled: boolean) {
 }
 
 export default function QuakeMap({
-  quakes, newest, onSelect, showFaults, showTrenches, showVolcanoes,
+  quakes, newest, onSelect, showFaults, showTrenches, showVolcanoes, basemap,
 }: Props) {
   const faults = useGeoJson('/geo/faults.geojson', showFaults);
   const trenches = useGeoJson('/geo/trenches.geojson', showTrenches);
+  const bm = BASEMAPS[basemap] ?? BASEMAPS.dark;
 
   return (
     <MapContainer center={[12.5, 122]} zoom={6} className="h-full w-full"
@@ -119,10 +142,8 @@ export default function QuakeMap({
                   zoomSnap={0.5} style={{ background: '#0b1220' }}>
       <FramePhilippines />
       <ZoomControl position="bottomleft" />
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; OpenStreetMap &copy; CARTO | Data: PHIVOLCS, USGS'
-      />
+      <TileLayer key={basemap} url={bm.url} subdomains={bm.subdomains}
+                 attribution={bm.attribution} maxZoom={20} />
 
       {showTrenches && trenches && (
         <GeoJSON key="trenches" data={trenches} onEachFeature={bindTrenchPopup}

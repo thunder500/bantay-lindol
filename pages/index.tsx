@@ -4,6 +4,7 @@ import { EarthquakeApiResponse, Quake } from '@/lib/types';
 import { applyFilters, FilterState } from '@/lib/filters';
 import { computeStats } from '@/lib/stats';
 import { monthOptions, monthBounds } from '@/lib/months';
+import type { Basemap } from '@/components/QuakeMap';
 import ControlPanel from '@/components/ControlPanel';
 import PeriodControls from '@/components/PeriodControls';
 import Toggle from '@/components/Toggle';
@@ -35,6 +36,7 @@ export default function Home() {
   const [showFaults, setShowFaults] = useState(true);
   const [showTrenches, setShowTrenches] = useState(true);
   const [showVolcanoes, setShowVolcanoes] = useState(true);
+  const [basemap, setBasemap] = useState<Basemap>('dark');
   const seenIds = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
@@ -101,6 +103,7 @@ export default function Home() {
       <QuakeMap
         quakes={mapQuakes} newest={mapNewest} onSelect={setSelected}
         showFaults={showFaults} showTrenches={showTrenches} showVolcanoes={showVolcanoes}
+        basemap={basemap}
       />
 
       <div className="absolute top-4 left-4 z-[1000] space-y-3">
@@ -132,6 +135,25 @@ export default function Home() {
             <Toggle label="Active Faults" checked={showFaults} onChange={setShowFaults} />
             <Toggle label="Trenches" checked={showTrenches} onChange={setShowTrenches} />
             <Toggle label="Volcanoes" checked={showVolcanoes} onChange={setShowVolcanoes} />
+          </div>
+          <div className="border-t border-white/10 pt-3 space-y-2">
+            <div className="text-xs uppercase tracking-wide text-white/50">Basemap</div>
+            <div className="grid grid-cols-3 gap-1">
+              {(['dark', 'satellite', 'streets'] as Basemap[]).map((b) => (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => setBasemap(b)}
+                  className={`text-[11px] capitalize rounded py-1 transition-colors ${
+                    basemap === b
+                      ? 'bg-sky-500 text-white'
+                      : 'bg-white/10 text-white/70 hover:bg-white/20'
+                  }`}
+                >
+                  {b}
+                </button>
+              ))}
+            </div>
           </div>
           {data?.stale && (
             <div className="text-amber-300 text-xs bg-amber-900/40 rounded p-2">
