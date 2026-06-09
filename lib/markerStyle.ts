@@ -6,10 +6,8 @@ export function depthColor(depthKm: number): string {
   return '#ef4444';
 }
 
-// Size ramp with a wide dynamic range: small quakes read as tiny dots and
-// large ones as big circles (M2 ~2px, M3 ~4px, M5 ~9px, M7 ~15px), matching
-// the reference legend's magnitude-range sizes.
+// Gentle linear size ramp: small quakes are tiny dots, large ones grow
+// steadily without ballooning (radius ~2px at M2, ~7px at M5, ~11px at M8).
 export function magRadius(mag: number): number {
-  const over = Math.max(mag - 1, 0);
-  return Math.max(2, 1.6 * Math.pow(over, 1.25));
+  return Math.max(2, (mag - 1) * 1.6);
 }
