@@ -15,7 +15,7 @@ import EventLog from '@/components/EventLog';
 
 const QuakeMap = dynamic(() => import('@/components/QuakeMap'), { ssr: false });
 
-const ALERT_THRESHOLD = 4.0;
+const ALERT_DEFAULT = 4.0;
 
 export default function Home() {
   const today = useMemo(
@@ -32,12 +32,19 @@ export default function Home() {
   const [filters, setFilters] = useState<FilterState>({ minMag: 0, maxDepth: 700, sinceMs: 0 });
   const [selected, setSelected] = useState<Quake | null>(null);
   const [displayResults, setDisplayResults] = useState(true);
-  const [alertOn, setAlertOn] = useState(false);
+  const [alertOn, setAlertOn] = useState(true);
   const [showFaults, setShowFaults] = useState(true);
   const [showTrenches, setShowTrenches] = useState(true);
   const [showVolcanoes, setShowVolcanoes] = useState(true);
   const [basemap, setBasemap] = useState<Basemap>('dark');
   const seenIds = useRef<Set<string>>(new Set());
+
+  // Alert fires only for new quakes at or above the selected Magnitude Range
+  // (or M4.0+ when the range is "All"). Kept in a ref so changing the filter
+  // does not trigger a refetch.
+  const alertMin = filters.minMag > 0 ? filters.minMag : ALERT_DEFAULT;
+  const alertMinRef = useRef(alertMin);
+  alertMinRef.current = alertMin;
 
   const load = useCallback(async () => {
     try {
@@ -48,7 +55,7 @@ export default function Home() {
       const json: EarthquakeApiResponse = await res.json();
       if (seenIds.current.size > 0 && alertOn) {
         for (const q of json.quakes) {
-          if (!seenIds.current.has(q.id) && q.magnitude >= ALERT_THRESHOLD) notify(q);
+          if (!seenIds.current.has(q.id) && q.magnitude >= alertMinRef.current) notify(q);
         }
       }
       json.quakes.forEach((q) => seenIds.current.add(q.id));
@@ -61,6 +68,13 @@ export default function Home() {
     const t = setInterval(load, 60_000);
     return () => clearInterval(t);
   }, [load]);
+
+  // Alert is on by default; ask for notification permission on mount.
+  useEffect(() => {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   function notify(q: Quake) {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
@@ -119,7 +133,7 @@ export default function Home() {
 
         <div className="rounded-xl bg-white/10 backdrop-blur-md p-4 border border-white/15 text-white space-y-4">
           <div className="text-sm font-semibold tracking-wide">Earthquake Events Monitoring</div>
-          <Toggle label="New EQ Event Alert" checked={alertOn} onChange={toggleAlert} />
+          <Toggle label={`New EQ Event Alert (M${alertMin}+)`} checked={alertOn} onChange={toggleAlert} />
           <PeriodControls
             month={month} monthList={monthList} start={start} end={end}
             onMonth={changeMonth} onStart={setStart} onEnd={setEnd}
