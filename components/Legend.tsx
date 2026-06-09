@@ -28,7 +28,7 @@ export default function Legend() {
       </div>
       <div className="flex items-center gap-3">
         <span className="w-12 text-white/50 uppercase tracking-wide">Lines</span>
-        <span className="flex items-center gap-1"><span className="w-4 border-t-2" style={{ borderColor: '#fb6a6a' }} />fault</span>
+        <span className="flex items-center gap-1"><span className="w-4 border-t-2" style={{ borderColor: '#e11d2a' }} />fault</span>
         <span className="flex items-center gap-1"><span className="w-4 border-t-2" style={{ borderColor: '#a855f7' }} />trench</span>
         <span className="flex items-center gap-1"><span className="w-0 h-0" style={{ borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderBottom: '7px solid #f97316' }} />volcano</span>
       </div>

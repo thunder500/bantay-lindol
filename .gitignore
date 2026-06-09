@@ -35,6 +35,9 @@ yarn-error.log*
 .geotmp/
 shot*.png
 verify*.png
+teeth*.png
+dense*.png
+final*.png
 devserver*.log
 
 # typescript

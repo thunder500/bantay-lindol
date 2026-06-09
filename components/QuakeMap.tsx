@@ -8,6 +8,7 @@ import type { Feature, FeatureCollection } from 'geojson';
 import { Quake } from '@/lib/types';
 import { depthColor, magRadius } from '@/lib/markerStyle';
 import { VOLCANOES } from '@/lib/volcanoes';
+import TrenchTeeth from '@/components/TrenchTeeth';
 
 export type Basemap = 'dark' | 'satellite' | 'streets';
 
@@ -76,12 +77,10 @@ function infoCard(title: string, rows: [string, string][]): string {
   return `<div class="eq-info"><div class="eq-info-title">${title}</div><table>${body}</table></div>`;
 }
 
-function bindFaultPopup(feature: Feature, layer: L.Layer) {
-  const p = (feature.properties ?? {}) as { name?: string; desc?: string };
+function bindFaultPopup(_feature: Feature, layer: L.Layer) {
   layer.bindPopup(
-    infoCard('ACTIVE FAULT INFORMATION', [
-      ['Fault Name', p.name || 'Unnamed active fault'],
-      ['Classification', p.desc || 'Active Fault'],
+    infoCard('ACTIVE FAULT', [
+      ['Type', 'Active fault trace'],
       ['Data Source', 'DOST-PHIVOLCS'],
     ]),
     { className: 'eq-info-popup' },
@@ -147,11 +146,12 @@ export default function QuakeMap({
 
       {showTrenches && trenches && (
         <GeoJSON key="trenches" data={trenches} onEachFeature={bindTrenchPopup}
-                 style={{ color: '#a855f7', weight: 3, opacity: 0.9 }} />
+                 style={{ color: '#a855f7', weight: 2.5, opacity: 0.9 }} />
       )}
+      {showTrenches && <TrenchTeeth data={trenches} />}
       {showFaults && faults && (
         <GeoJSON key="faults" data={faults} onEachFeature={bindFaultPopup}
-                 style={{ color: '#fb6a6a', weight: 1.6, opacity: 0.95 }} />
+                 style={{ color: '#e11d2a', weight: 1, opacity: 0.85 }} />
       )}
 
       {showVolcanoes && VOLCANOES.map((v) => (
