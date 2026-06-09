@@ -17,7 +17,7 @@ import AlertBanner from '@/components/AlertBanner';
 
 const QuakeMap = dynamic(() => import('@/components/QuakeMap'), { ssr: false });
 
-const ALERT_DEFAULT = 4.0;
+const ALERT_MAG_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export default function Home() {
   const today = useMemo(
@@ -39,13 +39,13 @@ export default function Home() {
   const [showTrenches, setShowTrenches] = useState(true);
   const [showVolcanoes, setShowVolcanoes] = useState(true);
   const [basemap, setBasemap] = useState<Basemap>('dark');
+  const [alertMag, setAlertMag] = useState(4);
   const [alertQuake, setAlertQuake] = useState<Quake | null>(null);
   const seenIds = useRef<Set<string>>(new Set());
 
-  // Alert fires only for new quakes at or above the selected Magnitude Range
-  // (or M4.0+ when the range is "All"). Kept in a ref so changing the filter
-  // does not trigger a refetch.
-  const alertMin = filters.minMag > 0 ? filters.minMag : ALERT_DEFAULT;
+  // Alarm threshold comes only from the Alerts-card dropdown; it does NOT filter
+  // the map. Kept in a ref so changing it does not trigger a refetch.
+  const alertMin = alertMag;
   const alertMinRef = useRef(alertMin);
   alertMinRef.current = alertMin;
 
@@ -171,11 +171,11 @@ export default function Home() {
         <EventLog quakes={visible} selectedId={selected?.id} onSelect={setSelected} />
       </div>
 
-      <div className="absolute top-4 right-4 z-[1000] w-80 max-h-[calc(100vh-2rem)] overflow-y-auto space-y-3">
+      <div className="absolute top-4 right-4 z-[1000] w-80 space-y-2">
         {data && <StatsStrip stats={stats} sourcesUsed={data.sourcesUsed} />}
 
         {/* Alerts — the loudest, clearest card. */}
-        <div className="rounded-xl bg-white/10 backdrop-blur-md p-4 border border-white/15 text-white space-y-3">
+        <div className="rounded-xl bg-white/10 backdrop-blur-md p-3 border border-white/15 text-white space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-base" aria-hidden>🔔</span>
@@ -189,67 +189,52 @@ export default function Home() {
               <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${alertOn ? 'translate-x-5' : ''}`} />
             </button>
           </div>
-          <p className="text-xs text-white/60 leading-relaxed">
-            {alertOn
-              ? <>It will <span className="text-white">ring and pop up</span> when a new earthquake of <span className="text-white">Magnitude {alertMin}+</span> is detected. Change the strength under Filters below.</>
-              : 'Turn on to ring and pop up an alert when a new earthquake is detected.'}
-          </p>
-          <button
-            type="button" onClick={testAlert}
-            className="w-full text-xs rounded bg-white/10 hover:bg-white/20 py-2 transition-colors"
-          >
-            🔊 Test the alert sound
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-white/70 whitespace-nowrap">Ring me for</label>
+            <select value={alertMag} onChange={(e) => setAlertMag(Number(e.target.value))}
+              className="flex-1 bg-white/10 border border-white/15 rounded px-2 py-1 text-sm text-white">
+              {ALERT_MAG_OPTIONS.map((m) => (
+                <option key={m} value={m} className="text-black">Magnitude {m}+</option>
+              ))}
+            </select>
+          </div>
+          <button type="button" onClick={testAlert}
+            className="w-full text-xs rounded bg-white/10 hover:bg-white/20 py-1.5 transition-colors">
+            🔊 Test the alarm
           </button>
         </div>
 
-        {/* Controls — grouped, plain language. */}
-        <div className="rounded-xl bg-white/10 backdrop-blur-md p-4 border border-white/15 text-white space-y-4">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-white/50 mb-2">When</div>
-            <PeriodControls
-              month={month} monthList={monthList} start={start} end={end}
-              onMonth={changeMonth} onStart={setStart} onEnd={setEnd}
-            />
-          </div>
-
-          <div className="border-t border-white/10 pt-3">
-            <div className="text-xs uppercase tracking-wide text-white/50 mb-2">Filters</div>
+        {/* Controls — grouped, plain language, compact. */}
+        <div className="rounded-xl bg-white/10 backdrop-blur-md p-3 border border-white/15 text-white space-y-2 text-sm">
+          <div className="text-xs uppercase tracking-wide text-white/50">When</div>
+          <PeriodControls
+            month={month} monthList={monthList} start={start} end={end}
+            onMonth={changeMonth} onStart={setStart} onEnd={setEnd}
+          />
+          <div className="border-t border-white/10 pt-2">
             <ControlPanel filters={filters} onChange={setFilters} />
           </div>
-
-          <div className="border-t border-white/10 pt-3 flex items-center justify-between">
-            <span className="text-sm text-white/70">Earthquakes shown</span>
-            <span className="text-lg font-bold">{visible.length}<span className="text-xs text-white/50 font-normal"> / {total}</span></span>
+          <div className="border-t border-white/10 pt-2 flex items-center justify-between">
+            <span className="text-white/70 text-xs">Earthquakes shown</span>
+            <span className="font-bold">{visible.length}<span className="text-xs text-white/50 font-normal"> / {total}</span></span>
           </div>
           <Toggle label="Show earthquakes on map" checked={displayResults} onChange={setDisplayResults} />
-
-          <div className="border-t border-white/10 pt-3 space-y-2">
-            <div className="text-xs uppercase tracking-wide text-white/50">Show on map</div>
-            <Toggle label="Active Faults" checked={showFaults} onChange={setShowFaults} />
-            <Toggle label="Trenches" checked={showTrenches} onChange={setShowTrenches} />
-            <Toggle label="Volcanoes" checked={showVolcanoes} onChange={setShowVolcanoes} />
+          <div className="border-t border-white/10 pt-2 flex flex-wrap gap-1">
+            {([['Faults', showFaults, setShowFaults], ['Trenches', showTrenches, setShowTrenches], ['Volcanoes', showVolcanoes, setShowVolcanoes]] as [string, boolean, (v: boolean) => void][]).map(([label, on, set]) => (
+              <button key={label} type="button" onClick={() => set(!on)}
+                className={`text-[11px] rounded-full px-2.5 py-1 transition-colors ${on ? 'bg-sky-500 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}>
+                {label}
+              </button>
+            ))}
           </div>
-
-          <div className="border-t border-white/10 pt-3 space-y-2">
-            <div className="text-xs uppercase tracking-wide text-white/50">Map style</div>
-            <div className="grid grid-cols-3 gap-1">
-              {([['dark', 'Dark'], ['satellite', 'Satellite'], ['streets', 'Streets']] as [Basemap, string][]).map(([b, label]) => (
-                <button
-                  key={b}
-                  type="button"
-                  onClick={() => setBasemap(b)}
-                  className={`text-[11px] rounded py-1.5 transition-colors ${
-                    basemap === b
-                      ? 'bg-sky-500 text-white'
-                      : 'bg-white/10 text-white/70 hover:bg-white/20'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+          <div className="border-t border-white/10 pt-2 grid grid-cols-3 gap-1">
+            {([['dark', 'Dark'], ['satellite', 'Satellite'], ['streets', 'Streets']] as [Basemap, string][]).map(([b, label]) => (
+              <button key={b} type="button" onClick={() => setBasemap(b)}
+                className={`text-[11px] rounded py-1.5 transition-colors ${basemap === b ? 'bg-sky-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}>
+                {label}
+              </button>
+            ))}
           </div>
-
           {data?.stale && (
             <div className="text-amber-300 text-xs bg-amber-900/40 rounded p-2">
               Live sources unavailable, showing last saved data.
