@@ -9,7 +9,7 @@ page.on('pageerror', (e) => errors.push(e.message));
 await page.goto('http://localhost:3000', { waitUntil: 'domcontentloaded', timeout: 60000 });
 await page.waitForTimeout(5000);
 
-await page.getByRole('button', { name: /Test the alert sound/i }).click();
+await page.getByRole('button', { name: /Test the alarm/i }).click();
 await page.waitForTimeout(1500);
 
 const banner = await page.evaluate(() => {

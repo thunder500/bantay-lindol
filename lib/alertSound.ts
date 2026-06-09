@@ -25,10 +25,15 @@ export function primeAudio(): void {
   ensure();
   [high, low].forEach((a) => {
     if (!a) return;
+    const wasMuted = a.muted;
     a.muted = true;
-    a.play()
-      .then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
-      .catch(() => { a.muted = false; });
+    const p = a.play();
+    if (p && typeof p.then === 'function') {
+      p.then(() => { a.pause(); a.currentTime = 0; a.muted = wasMuted; })
+       .catch(() => { a.muted = wasMuted; });
+    } else {
+      a.muted = wasMuted;
+    }
   });
 }
 
@@ -41,6 +46,7 @@ export function playAlertRing(magnitude = 5): void {
   try {
     a.pause();
     a.currentTime = 0;
+    a.muted = false;   // critical: primeAudio() may have left it muted
     a.volume = 1;
     void a.play().catch(() => {});
   } catch { /* ignore playback errors */ }
