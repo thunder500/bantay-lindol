@@ -21,7 +21,7 @@ export default function StatsStrip({ stats, sourcesUsed }: Props) {
         <Stat label="Deep" value={stats.deep} />
       </div>
       <div className="mt-2 pt-2 border-t border-white/10 text-center text-[10px] uppercase tracking-wide text-white/50">
-        Source: {sourcesUsed.join(' + ').toUpperCase() || '-'}
+        Source: {(sourcesUsed[0] ?? '-').toUpperCase()}
       </div>
     </div>
   );

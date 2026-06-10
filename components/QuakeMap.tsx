@@ -22,7 +22,7 @@ interface Props {
   basemap: Basemap;
 }
 
-const DATA_CREDIT = 'Data: EMSC (seismicportal.eu)';
+const DATA_CREDIT = 'Data: PHIVOLCS';
 const BASEMAPS: Record<Basemap, { url: string; subdomains: string | string[]; attribution: string }> = {
   dark: {
     url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
