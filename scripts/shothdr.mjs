@@ -1,0 +1,10 @@
+import { chromium } from 'playwright-core';
+const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const browser = await chromium.launch({ executablePath: CHROME, headless: true });
+const page = await browser.newPage({ viewport: { width: 1200, height: 850 } });
+await page.goto('http://localhost:3000', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await page.waitForTimeout(4000);
+console.log('tab title:', await page.title());
+await page.screenshot({ path: 'shot-hdr.png', clip: { x: 8, y: 8, width: 280, height: 80 } });
+console.log('saved shot-hdr.png');
+await browser.close();

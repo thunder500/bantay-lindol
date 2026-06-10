@@ -206,8 +206,18 @@ export default function Home() {
 
       <div className="absolute top-4 left-4 z-[1000] space-y-3">
         <header>
-          <h1 className="text-white font-bold text-lg drop-shadow">BantayLindol</h1>
-          <p className="text-white/60 text-xs">Philippine Earthquake Monitor</p>
+          <div className="flex items-center gap-2">
+            <svg viewBox="0 0 32 32" className="w-7 h-7 shrink-0 drop-shadow" aria-hidden>
+              <rect width="32" height="32" rx="7" fill="#0b1220" />
+              <circle cx="16" cy="16" r="11.5" fill="none" stroke="#ef4444" strokeWidth="1.4" opacity="0.3" />
+              <circle cx="16" cy="16" r="7.5" fill="none" stroke="#ef4444" strokeWidth="1.7" opacity="0.6" />
+              <circle cx="16" cy="16" r="3.4" fill="#ef4444" />
+            </svg>
+            <div className="leading-tight">
+              <h1 className="text-white font-bold text-lg drop-shadow">BantayLindol</h1>
+              <p className="text-white/60 text-xs">Philippine Earthquake Monitor</p>
+            </div>
+          </div>
           <div className="flex items-center gap-2 mt-1 text-[11px]">
             <span className="flex items-center gap-1 text-emerald-400 font-semibold">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
