@@ -57,6 +57,9 @@ export default function Home() {
       if (end) qs.set('end', end);
       const res = await fetch(`/api/earthquakes?${qs.toString()}`);
       const json: EarthquakeApiResponse = await res.json();
+      // A transient source hiccup returns stale+empty; keep the last good data
+      // instead of blanking the map/log.
+      if (json.stale && (!json.quakes || json.quakes.length === 0)) return;
       if (seenIds.current.size > 0 && alertOn) {
         const fresh = json.quakes.filter(
           (q) => !seenIds.current.has(eventKey(q)) && q.magnitude >= alertMinRef.current,
@@ -232,7 +235,7 @@ export default function Home() {
                     className="text-white/60 hover:text-white">↻</button>
           </div>
         </header>
-        <EventLog quakes={visible} selectedId={selected?.id} onSelect={setSelected} />
+        <EventLog quakes={visible} selectedId={selected?.id} onSelect={setSelected} loading={!data} />
       </div>
 
       <div className="absolute top-4 right-4 z-[1000] w-80 space-y-2">

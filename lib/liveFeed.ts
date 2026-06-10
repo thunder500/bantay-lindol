@@ -7,8 +7,6 @@
 // State lives on globalThis so it is a single shared instance across all API
 // route modules (Next.js bundles each route separately; a plain module-level
 // singleton would NOT be shared between /api/stream and other routes).
-import { fetchPhivolcs } from './sources/phivolcs';
-import { fetchUsgs } from './sources/usgs';
 import { fetchEmsc } from './sources/emsc';
 import { resolveSources } from './resolveSources';
 import { filterByRange } from './dateFilter';
@@ -54,12 +52,8 @@ async function poll(): Promise<void> {
   state.busy = true;
   try {
     const today = todayYmd();
-    const [ph, us, em] = await Promise.all([
-      settle(fetchPhivolcs()),
-      settle(fetchUsgs({ start: today, end: today })),
-      settle(fetchEmsc({ start: today, end: today })),
-    ]);
-    const { quakes, failed } = resolveSources(ph, us, em);
+    const em = await settle(fetchEmsc({ start: today, end: today }));
+    const { quakes, failed } = resolveSources(null, null, em);
     if (failed) return;
     const ranged = filterByRange(quakes, today, today);
     state.snapshot = ranged;

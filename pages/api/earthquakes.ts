@@ -1,10 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { fetchPhivolcs } from '@/lib/sources/phivolcs';
-import { fetchUsgs } from '@/lib/sources/usgs';
 import { fetchEmsc } from '@/lib/sources/emsc';
 import { resolveSources } from '@/lib/resolveSources';
 import { TtlCache } from '@/lib/cache';
-import { sanitizeRange, rangeIncludesToday, rangeKey } from '@/lib/dateRange';
+import { sanitizeRange, rangeKey } from '@/lib/dateRange';
 import { filterByRange } from '@/lib/dateFilter';
 import { EarthquakeApiResponse } from '@/lib/types';
 
@@ -12,17 +10,13 @@ import { EarthquakeApiResponse } from '@/lib/types';
 const caches = new Map<string, TtlCache<EarthquakeApiResponse>>();
 function cacheFor(key: string): TtlCache<EarthquakeApiResponse> {
   let c = caches.get(key);
-  // Short TTL so data stays near-live, while still shielding PHIVOLCS from being
-  // scraped on every single client request.
+  // Short TTL keeps data near-live without re-hitting the source every request.
   if (!c) { c = new TtlCache<EarthquakeApiResponse>(15_000); caches.set(key, c); }
   return c;
 }
 
 function first(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
-}
-function todayYmd(): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
 }
 
 async function settle<T>(p: Promise<T>): Promise<T | null> {
@@ -42,15 +36,10 @@ export default async function handler(
   const cached = cache.get();
   if (cached) { res.status(200).json(cached); return; }
 
-  const includeRecent = rangeIncludesToday(end, todayYmd());
+  // Single fast source: EMSC (multi-agency automatic solutions, includes PHIVOLCS).
+  const emsc = await settle(fetchEmsc({ start, end }));
 
-  const [phivolcs, usgs, emsc] = await Promise.all([
-    includeRecent ? settle(fetchPhivolcs()) : Promise.resolve(null),
-    settle(fetchUsgs({ start, end })),
-    settle(fetchEmsc({ start, end })),
-  ]);
-
-  const { quakes, sourcesUsed, failed } = resolveSources(phivolcs, usgs, emsc);
+  const { quakes, sourcesUsed, failed } = resolveSources(null, null, emsc);
 
   if (failed) {
     const stale = cache.peek();

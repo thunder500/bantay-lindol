@@ -5,6 +5,7 @@ interface Props {
   quakes: Quake[];
   selectedId?: string;
   onSelect: (q: Quake) => void;
+  loading?: boolean;
 }
 
 // Exact PHT clock time, e.g. "Jun 9, 2:05 PM".
@@ -27,7 +28,7 @@ function relTime(ms: number, now: number): string {
   return `${d}d ago`;
 }
 
-export default function EventLog({ quakes, selectedId, onSelect }: Props) {
+export default function EventLog({ quakes, selectedId, onSelect, loading }: Props) {
   const now = Date.now();
   return (
     <div className="rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-white
@@ -38,7 +39,9 @@ export default function EventLog({ quakes, selectedId, onSelect }: Props) {
         <span className="text-white/50">{quakes.length}</span>
       </div>
       {quakes.length === 0 ? (
-        <div className="px-3 py-4 text-xs text-white/50">No events in this range.</div>
+        <div className="px-3 py-4 text-xs text-white/50">
+          {loading ? 'Loading earthquakes…' : 'No events in this range.'}
+        </div>
       ) : (
         <ul className="overflow-y-auto divide-y divide-white/5">
           {quakes.slice(0, 150).map((q) => (
