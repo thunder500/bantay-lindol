@@ -5,7 +5,6 @@ import { applyFilters, FilterState } from '@/lib/filters';
 import { computeStats } from '@/lib/stats';
 import { monthOptions, monthBounds } from '@/lib/months';
 import { playAlertRing, primeAudio, stopAlertRing } from '@/lib/alertSound';
-import { eventKey } from '@/lib/eventKey';
 import type { Basemap } from '@/components/QuakeMap';
 import ControlPanel from '@/components/ControlPanel';
 import PeriodControls from '@/components/PeriodControls';
@@ -42,13 +41,69 @@ export default function Home() {
   const [basemap, setBasemap] = useState<Basemap>('dark');
   const [alertMag, setAlertMag] = useState(4);
   const [alertQuake, setAlertQuake] = useState<Quake | null>(null);
-  const seenIds = useRef<Set<string>>(new Set());
-
-  // Alarm threshold comes only from the Alerts-card dropdown; it does NOT filter
-  // the map. Kept in a ref so changing it does not trigger a refetch.
+  // Alarm threshold from the Alerts-card dropdown (kept in a ref).
   const alertMin = alertMag;
   const alertMinRef = useRef(alertMin);
   alertMinRef.current = alertMin;
+  const alertOnRef = useRef(alertOn);
+  alertOnRef.current = alertOn;
+  const raiseAlertRef = useRef<(q: Quake) => void>(() => {});
+  raiseAlertRef.current = raiseAlert;
+
+  // Ring ONLY for a genuinely new, recent quake. `lastAlertTime` = the time of
+  // the newest quake already processed, persisted in localStorage so refreshing
+  // the page never re-rings for events that already happened.
+  const FRESH_WINDOW_MS = 20 * 60 * 1000;
+  const lastAlertTimeRef = useRef<number | null>(null);
+  if (lastAlertTimeRef.current === null) {
+    const s = typeof window !== 'undefined'
+      ? Number(window.localStorage.getItem('bantay_lastAlertTime')) : 0;
+    lastAlertTimeRef.current = Number.isFinite(s) && s > 0 ? s : 0;
+  }
+  // Recently-alarmed events, so the same physical quake reported by a second
+  // source (slightly different time/location) never rings twice.
+  const recentAlertsRef = useRef<{ time: number; lat: number; lon: number }[]>([]);
+
+  function processForAlert(quakes: Quake[]) {
+    if (!quakes || quakes.length === 0) return;
+    const newest = quakes.reduce((m, q) => (q.time > m ? q.time : m), 0);
+    const last = lastAlertTimeRef.current ?? 0;
+    if (last === 0) {
+      // First load with no baseline: remember the latest, never ring for the
+      // existing list (prevents the scary ring on first open / refresh).
+      lastAlertTimeRef.current = newest;
+    } else {
+      if (alertOnRef.current) {
+        const now = Date.now();
+        const fresh = quakes.filter(
+          (q) => q.time > last
+            && q.magnitude >= alertMinRef.current
+            && now - q.time < FRESH_WINDOW_MS,
+        );
+        if (fresh.length > 0) {
+          const latest = fresh.reduce((a, b) => (b.time > a.time ? b : a));
+          const dup = recentAlertsRef.current.some((r) =>
+            Math.abs(r.time - latest.time) < 60_000
+            && Math.abs(r.lat - latest.lat) < 0.25
+            && Math.abs(r.lon - latest.lon) < 0.25);
+          if (!dup) {
+            raiseAlertRef.current(latest);
+            const cutoff = now - 30 * 60 * 1000;
+            recentAlertsRef.current = [
+              ...recentAlertsRef.current.filter((r) => r.time > cutoff),
+              { time: latest.time, lat: latest.lat, lon: latest.lon },
+            ];
+          }
+        }
+      }
+      if (newest > last) lastAlertTimeRef.current = newest;
+    }
+    try {
+      window.localStorage.setItem('bantay_lastAlertTime', String(lastAlertTimeRef.current));
+    } catch { /* ignore */ }
+  }
+  const processRef = useRef(processForAlert);
+  processRef.current = processForAlert;
 
   const load = useCallback(async () => {
     try {
@@ -57,22 +112,14 @@ export default function Home() {
       if (end) qs.set('end', end);
       const res = await fetch(`/api/earthquakes?${qs.toString()}`);
       const json: EarthquakeApiResponse = await res.json();
-      // A transient source hiccup returns stale+empty; keep the last good data
-      // instead of blanking the map/log.
+      // A transient source hiccup returns stale+empty; keep the last good data.
       if (json.stale && (!json.quakes || json.quakes.length === 0)) return;
-      if (seenIds.current.size > 0 && alertOn) {
-        const fresh = json.quakes.filter(
-          (q) => !seenIds.current.has(eventKey(q)) && q.magnitude >= alertMinRef.current,
-        );
-        if (fresh.length > 0) {
-          const strongest = fresh.reduce((a, b) => (b.magnitude > a.magnitude ? b : a));
-          raiseAlert(strongest);
-        }
-      }
-      json.quakes.forEach((q) => seenIds.current.add(eventKey(q)));
+      processRef.current(json.quakes);
       setData(json);
     } catch { /* keep last good data */ }
-  }, [start, end, alertOn]);
+  }, [start, end]);
+  const loadRef = useRef(load);
+  loadRef.current = load;
 
   useEffect(() => {
     load();
@@ -87,35 +134,17 @@ export default function Home() {
     return () => clearInterval(t);
   }, []);
 
-  // Live push (SSE): the server pushes new events the instant it detects them,
-  // so the alarm fires without waiting for the browser's refresh. Refs keep the
-  // single persistent connection using the latest handlers/state.
-  const alertOnRef = useRef(alertOn);
-  const raiseAlertRef = useRef<(q: Quake) => void>(() => {});
-  const loadRef = useRef(load);
-  alertOnRef.current = alertOn;
-  raiseAlertRef.current = raiseAlert;
-  loadRef.current = load;
+  // Live push (SSE): server pushes new events; routed through the same
+  // new-only alarm check so it can never double-ring.
   useEffect(() => {
     if (typeof EventSource === 'undefined') return;
     const es = new EventSource('/api/stream');
     es.onmessage = (e) => {
       let msg: { type: string; quakes: Quake[] };
       try { msg = JSON.parse(e.data); } catch { return; }
-      if (msg.type === 'snapshot') {
-        msg.quakes.forEach((q) => seenIds.current.add(eventKey(q)));
-      } else if (msg.type === 'new') {
-        let strongest: Quake | null = null;
-        for (const q of msg.quakes) {
-          const k = eventKey(q);
-          if (seenIds.current.has(k)) continue;
-          seenIds.current.add(k);
-          if (alertOnRef.current && q.magnitude >= alertMinRef.current
-              && (!strongest || q.magnitude > strongest.magnitude)) strongest = q;
-        }
-        if (strongest) raiseAlertRef.current(strongest);
-        loadRef.current();
-      }
+      if (!msg.quakes) return;
+      processRef.current(msg.quakes);
+      if (msg.type === 'new') loadRef.current();
     };
     return () => es.close();
   }, []);
